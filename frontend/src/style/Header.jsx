@@ -1,43 +1,81 @@
 export default function Header() {
     return (
-        <header className="fixed top-0 left-0 right-0 z-50">
-            {/* Glassmorphism bar */}
-            <div className="mx-4 mt-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-lg shadow-black/30">
-                <div className="flex items-center justify-between px-6 py-3">
+        <header style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+        }}>
+            <div style={{
+                margin: '16px',
+                borderRadius: '16px',
+                border: '1px solid rgba(100, 80, 180, 0.15)',
+                background: 'rgba(10, 8, 25, 0.6)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(130,100,255,0.08)',
+            }}>
+                {/* Inner row — all inline flex */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 24px',
+                }}>
 
                     {/* Logo / Brand */}
-                    <div className="flex items-center gap-2">
-                        {/* Icon mark */}
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-md">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="white"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                            >
-                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                            </svg>
-                        </div>
-                        {/* Brand name */}
-                        <span className="text-xl font-bold tracking-tight text-white">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                            fontSize: '1.8rem',
+                            fontWeight: 700,
+                            color: 'white',
+                            letterSpacing: '-0.03em',
+                            lineHeight: 1,
+                        }}>
                             Vector
                         </span>
                     </div>
 
                     {/* Nav links */}
-                    <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/60">
-                        <a href="#" className="hover:text-white transition-colors duration-200">Dashboard</a>
-                        <a href="#" className="hover:text-white transition-colors duration-200">Test Runs</a>
-                        <a href="#" className="hover:text-white transition-colors duration-200">Reports</a>
-                        <a href="#" className="hover:text-white transition-colors duration-200">Schemas</a>
+                    <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+                        {['Dashboard', 'Test Runs', 'Reports', 'Schemas'].map(link => (
+                            <a
+                                key={link}
+                                href="#"
+                                style={{
+                                    color: 'rgba(255,255,255,0.55)',
+                                    textDecoration: 'none',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    transition: 'color 0.2s',
+                                    whiteSpace: 'nowrap',
+                                }}
+                                onMouseEnter={e => e.target.style.color = 'white'}
+                                onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.55)'}
+                            >
+                                {link}
+                            </a>
+                        ))}
                     </nav>
 
                     {/* CTA button */}
-                    <button className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:opacity-90 active:scale-95 transition-all duration-200">
+                    <button style={{
+                        background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '8px 20px',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 12px rgba(124,58,237,0.35)',
+                        transition: 'opacity 0.2s',
+                        flexShrink: 0,
+                    }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
                         Run Tests
                     </button>
 
