@@ -1,5 +1,6 @@
 import FloatingLines from './style/FloatingLines.jsx';
 import Header from './style/Header.jsx';
+import HomePage from './style/HomePage.jsx';
 import './App.css';
 
 function App() {
@@ -31,7 +32,7 @@ function App() {
 
       {/* Page content sits above the background */}
       <div style={{ position: 'relative', zIndex: 1, paddingTop: '80px' }}>
-        {/* your page content goes here */}
+        <HomePage />
       </div>
     </>
   );
