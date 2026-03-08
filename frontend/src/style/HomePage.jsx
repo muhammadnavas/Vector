@@ -30,7 +30,6 @@ const CORE_COMPONENTS = [
     description:
       'Listens to GitHub webhooks, reads changed files, detects modified endpoints, and understands full commit context through the GitHub API.',
     tags: ['Webhooks', 'GitHub API', 'Repo Cloning'],
-    icon: '🐙',
     gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
   },
   {
@@ -39,7 +38,6 @@ const CORE_COMPONENTS = [
     description:
       'Uses LLMs (GPT, Gemini, HuggingFace) to read API routes, detect request/response structures, understand auth logic, and identify edge cases.',
     tags: ['OpenAI GPT', 'Gemini', 'HuggingFace'],
-    icon: '🧠',
     gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
   },
   {
@@ -48,7 +46,6 @@ const CORE_COMPONENTS = [
     description:
       'Automatically generates positive, negative, edge-case, auth-failure, and rate-limit tests adapted to every changed endpoint.',
     tags: ['Positive Tests', 'Negative Tests', 'Edge Cases'],
-    icon: '📝',
     gradient: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
   },
   {
@@ -57,7 +54,6 @@ const CORE_COMPONENTS = [
     description:
       'Runs tests inside the CI pipeline using Postman, Pytest, and Newman. Integrated with GitHub Actions for seamless automation.',
     tags: ['Postman', 'Pytest', 'Newman', 'GitHub Actions'],
-    icon: '▶️',
     gradient: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
   },
   {
@@ -66,7 +62,6 @@ const CORE_COMPONENTS = [
     description:
       'Reads stack traces, understands error types, compares expected vs actual responses, and provides actionable fix suggestions.',
     tags: ['Stack Trace Analysis', 'Error Classification', 'Fix Hints'],
-    icon: '🔍',
     gradient: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
   },
   {
@@ -75,10 +70,10 @@ const CORE_COMPONENTS = [
     description:
       'Creates Markdown reports, JSON logs, PR comments, and sends alerts via Email/Slack to keep the whole team informed instantly.',
     tags: ['Markdown', 'JSON Logs', 'Slack', 'PR Comments'],
-    icon: '📊',
     gradient: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
   },
 ];
+
 
 /* ─────────────────────────────────────────────
    Stats data
@@ -176,26 +171,6 @@ function HeroSection() {
       maxWidth: '900px',
       margin: '0 auto',
     }}>
-      {/* pill badge */}
-      <div style={{ marginBottom: '24px' }}>
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 18px',
-          borderRadius: '999px',
-          background: 'rgba(124,58,237,0.12)',
-          border: '1px solid rgba(124,58,237,0.25)',
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          color: token.violet,
-          letterSpacing: '0.06em',
-        }}>
-          <span style={{ fontSize: '0.65rem', background: '#7c3aed', color: 'white', borderRadius: '999px', padding: '2px 8px' }}>NEW</span>
-          Agentic AI &bull; DevOps &bull; API Testing
-        </span>
-      </div>
-
       {/* Headline */}
       <h1 style={{
         fontSize: 'clamp(2.2rem, 6vw, 4rem)',
@@ -403,19 +378,7 @@ function CoreComponents() {
               }}>
                 {c.num}
               </span>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
-                background: c.gradient,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.4rem',
-                boxShadow: '0 4px 16px rgba(124,58,237,0.3)',
-              }}>
-                {c.icon}
-              </div>
+
             </div>
 
             <h3 style={{
