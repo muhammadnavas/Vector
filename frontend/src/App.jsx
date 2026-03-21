@@ -1,9 +1,31 @@
+import { useState } from 'react';
+import './App.css';
+import ExecutionHistory from './style/ExecutionHistory.jsx';
 import FloatingLines from './style/FloatingLines.jsx';
 import Header from './style/Header.jsx';
 import HomePage from './style/HomePage.jsx';
-import './App.css';
+import TestRunner from './style/TestRunner.jsx';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+
+  const handleNavigate = (page) => {
+    setCurrentPage(page);
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage />;
+      case 'runner':
+        return <TestRunner />;
+      case 'history':
+        return <ExecutionHistory />;
+      default:
+        return <HomePage />;
+    }
+  };
+
   return (
     <>
       {/* Full-viewport background canvas */}
@@ -28,11 +50,11 @@ function App() {
       </div>
 
       {/* Header — sits above the canvas */}
-      <Header />
+      <Header currentPage={currentPage} onNavigate={handleNavigate} />
 
       {/* Page content sits above the background */}
       <div style={{ position: 'relative', zIndex: 1, paddingTop: '80px' }}>
-        <HomePage />
+        {renderPage()}
       </div>
     </>
   );

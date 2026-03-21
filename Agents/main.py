@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import health, items
+from routes import health, items, pipeline
 
 app = FastAPI(
     title="Vector API",
-    description="Simple REST API for Vector project",
+    description="AI-powered automated API testing platform with LangGraph multi-agent orchestration",
     version="1.0.0"
 )
 
@@ -20,10 +20,17 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(items.router, prefix="/api")
+app.include_router(pipeline.router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Vector API is running"}
+    return {
+        "message": "Vector API is running",
+        "version": "1.0.0",
+        "docs": "http://localhost:8000/docs",
+        "pipeline_webhook": "POST /pipeline/webhook/github",
+        "manual_test": "POST /pipeline/test-run"
+    }
 
 if __name__ == "__main__":
     import uvicorn

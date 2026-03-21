@@ -1,4 +1,4 @@
-export default function Header() {
+export default function Header({ currentPage, onNavigate }) {
     return (
         <header style={{
             position: 'fixed',
@@ -26,41 +26,63 @@ export default function Header() {
 
                     {/* Logo / Brand */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{
-                            fontSize: '1.8rem',
-                            fontWeight: 700,
-                            color: 'white',
-                            letterSpacing: '-0.03em',
-                            lineHeight: 1,
-                        }}>
-                            Vector
-                        </span>
+                        <button
+                            onClick={() => onNavigate('home')}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 0,
+                            }}
+                        >
+                            <span style={{
+                                fontSize: '1.8rem',
+                                fontWeight: 700,
+                                color: 'white',
+                                letterSpacing: '-0.03em',
+                                lineHeight: 1,
+                            }}>
+                                Vector
+                            </span>
+                        </button>
                     </div>
 
                     {/* Nav links */}
                     <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-                        {['Dashboard', 'Test Runs', 'Reports', 'Schemas'].map(link => (
-                            <a
-                                key={link}
-                                href="#"
+                        {[
+                            { name: 'Home', page: 'home' },
+                            { name: 'Test Runner', page: 'runner' },
+                            { name: 'History', page: 'history' },
+                        ].map(link => (
+                            <button
+                                key={link.page}
+                                onClick={() => onNavigate(link.page)}
                                 style={{
-                                    color: 'rgba(255,255,255,0.55)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: currentPage === link.page ? 'white' : 'rgba(255,255,255,0.55)',
                                     textDecoration: 'none',
                                     fontSize: '0.875rem',
                                     fontWeight: 500,
                                     transition: 'color 0.2s',
                                     whiteSpace: 'nowrap',
+                                    padding: 0,
+                                    borderBottom: currentPage === link.page ? '2px solid #7c3aed' : 'none',
+                                    paddingBottom: currentPage === link.page ? '4px' : '2px',
                                 }}
-                                onMouseEnter={e => e.target.style.color = 'white'}
-                                onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.55)'}
+                                onMouseEnter={e => { if (currentPage !== link.page) e.target.style.color = 'white'; }}
+                                onMouseLeave={e => { if (currentPage !== link.page) e.target.style.color = 'rgba(255,255,255,0.55)'; }}
                             >
-                                {link}
-                            </a>
+                                {link.name}
+                            </button>
                         ))}
                     </nav>
 
                     {/* CTA button */}
-                    <button style={{
+                    <button
+                        onClick={() => onNavigate('runner')}
+                        style={{
                         background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
                         color: 'white',
                         border: 'none',
