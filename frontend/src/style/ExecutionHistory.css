@@ -1,0 +1,30 @@
+/* ExecutionHistory Component Styles */
+
+.execution-history-container {
+  width: 100%;
+  padding: 24px;
+}
+
+.execution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.execution-item {
+  transition: all 0.2s ease;
+}
+
+.execution-item:hover {
+  transform: translateX(4px);
+}
+
+.execution-details {
+  position: sticky;
+  top: 100px;
+}
+
+button {
+  all: unset;
+  cursor: pointer;
+}
