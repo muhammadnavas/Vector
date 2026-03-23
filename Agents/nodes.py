@@ -9,83 +9,40 @@ from graph_state import VectorAgentState, CodeChange, TestCase, TestResult, Test
 
 
 # ============================================================================
-
+# NODE 1: GITHUB INTEGRATION AGENT
 # ============================================================================
-# NODE 1: GITHUB INTEGRATION AGENT (with real endpoint extraction)
-# ============================================================================
-import os
-import re
-
-def extract_fastapi_endpoints_from_file(filepath):
-    """
-    Extract FastAPI endpoints from a Python file by looking for @router or @app route decorators.
-    Returns a list of (method, path, snippet) tuples.
-    """
-    endpoints = []
-    route_pattern = re.compile(r"@(router|app)\.(get|post|put|delete|patch)\(([^)]*)\)")
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        for i, line in enumerate(lines):
-            match = route_pattern.search(line)
-            if match:
-                method = match.group(2).upper()
-                # Extract path argument (may be quoted or not)
-                path_args = match.group(3).split(",")[0].strip()
-                path = path_args.strip("'\" ")
-                # Get a code snippet (decorator + next 2 lines)
-                snippet = line.strip()
-                if i+1 < len(lines):
-                    snippet += "\n" + lines[i+1].strip()
-                if i+2 < len(lines):
-                    snippet += "\n" + lines[i+2].strip()
-                endpoints.append((method, path, snippet))
-    except Exception as e:
-        pass
-    return endpoints
-
-def scan_directory_for_fastapi_routes(directory):
-    """
-    Recursively scan a directory for .py files and extract FastAPI endpoints.
-    Returns a list of CodeChange objects for API route files.
-    """
-    code_changes = []
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if file.endswith(".py"):
-                filepath = os.path.join(root, file)
-                endpoints = extract_fastapi_endpoints_from_file(filepath)
-                if endpoints:
-                    methods_affected = [f"{m} {p}" for m, p, _ in endpoints]
-                    snippet = "\n---\n".join([s for _, _, s in endpoints])
-                    code_changes.append(CodeChange(
-                        file=os.path.relpath(filepath, directory),
-                        lines_added=0,  # Not tracked here
-                        lines_removed=0,
-                        is_api_route=True,
-                        methods_affected=methods_affected,
-                        content_snippet=snippet
-                    ))
-    return code_changes
-
 async def github_integration_agent(state: VectorAgentState) -> dict:
     """
     Webhook receiver that processes GitHub push events
-    Scans the repo for FastAPI endpoints and populates files_changed
+    Analyzes changed files and detects API route modifications
     """
     print(f"\n🔗 [GITHUB AGENT] Processing webhook: {state.webhook_id}")
     print(f"   Repo: {state.repo_name} | Commit: {state.commit_sha[:7]}")
 
-    # For demo: scan the local Agents/routes directory for endpoints
-    repo_dir = os.path.join(os.path.dirname(__file__), "routes")
-    changes = scan_directory_for_fastapi_routes(repo_dir)
+    # Simulate parsing GitHub diff and detecting changed files
+    changes = [
+        CodeChange(
+            file="routes/users.py",
+            lines_added=47,
+            lines_removed=12,
+            is_api_route=True,
+            methods_affected=["POST /users", "GET /users/{id}"],
+            content_snippet="@app.post('/users')\ndef create_user(user: UserSchema):\n    return user.save()"
+        ),
+        CodeChange(
+            file="models/user.py",
+            lines_added=15,
+            lines_removed=5,
+            is_api_route=False,
+            methods_affected=[],
+            content_snippet="class User(BaseModel):\n    email: str\n    name: str"
+        ),
+    ]
 
     state.files_changed = changes
     state.status = "files_analyzed"
 
-    print(f"   ✓ Found {len(changes)} API route files")
-    for c in changes:
-        print(f"     - {c.file}: {c.methods_affected}")
+    print(f"   ✓ Found {len(changes)} changed files ({sum(c.lines_added for c in changes)} lines added)")
     return state.dict()
 
 
