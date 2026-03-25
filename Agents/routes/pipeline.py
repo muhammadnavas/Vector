@@ -3,13 +3,44 @@ from pydantic import BaseModel
 from typing import Optional
 import asyncio
 from datetime import datetime
+import json
+from pathlib import Path
+import uuid
 from graph import vector_pipeline
 from graph_state import VectorAgentState
+from discovery.service import discover_endpoints_from_repo, validate_github_repo_url
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
-# In-memory storage for execution results (replace with DB in production)
-execution_history = {}
+HISTORY_FILE = Path(__file__).resolve().parent.parent / "execution_history.json"
+
+
+def _load_execution_history() -> dict:
+    if not HISTORY_FILE.exists():
+        return {}
+
+    try:
+        raw = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    # Background tasks are interrupted on reload, so pending/processing jobs cannot continue.
+    for execution in raw.values():
+        status = execution.get("status")
+        if status in {"pending", "processing"}:
+            execution["status"] = "failed"
+            execution["success"] = False
+            execution["error"] = "Server reloaded before job completion. Please retry."
+            execution["timestamp"] = datetime.now().isoformat()
+    return raw
+
+
+def _save_execution_history() -> None:
+    HISTORY_FILE.write_text(json.dumps(execution_history, indent=2), encoding="utf-8")
+
+
+# In-memory storage backed by disk to survive development reloads.
+execution_history = _load_execution_history()
 
 
 class WebhookPayload(BaseModel):
@@ -19,6 +50,12 @@ class WebhookPayload(BaseModel):
     repo_url: str
     commit_sha: str
     commit_message: str
+
+
+class DiscoverRepoPayload(BaseModel):
+    """Payload for endpoint discovery from a public GitHub repository."""
+    repo_url: str
+    repo_name: Optional[str] = None
 
 
 @router.post("/webhook/github")
@@ -37,6 +74,16 @@ async def receive_github_webhook(payload: WebhookPayload, background_tasks: Back
         commit_message=payload.commit_message,
         status="pending"
     )
+
+    execution_history[payload.webhook_id] = {
+        "type": "pipeline",
+        "timestamp": datetime.now().isoformat(),
+        "status": "pending",
+        "repo": payload.repo_name,
+        "repo_url": payload.repo_url,
+        "success": True,
+    }
+    _save_execution_history()
 
     # Run pipeline in background
     background_tasks.add_task(execute_pipeline, state)
@@ -58,6 +105,16 @@ async def execute_pipeline(initial_state: VectorAgentState):
     print(f"🚀 STARTING VECTOR PIPELINE: {initial_state.webhook_id}")
     print(f"{'='*70}")
 
+    execution_history[initial_state.webhook_id] = {
+        "type": "pipeline",
+        "timestamp": datetime.now().isoformat(),
+        "status": "processing",
+        "repo": initial_state.repo_name,
+        "repo_url": initial_state.repo_url,
+        "success": True,
+    }
+    _save_execution_history()
+
     try:
         # Convert to dict for LangGraph
         state_dict = initial_state.dict()
@@ -74,10 +131,15 @@ async def execute_pipeline(initial_state: VectorAgentState):
 
         # Store in history
         execution_history[initial_state.webhook_id] = {
+            "type": "pipeline",
             "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+            "repo": initial_state.repo_name,
+            "repo_url": initial_state.repo_url,
             "state": final_state.dict(),
             "success": True
         }
+        _save_execution_history()
 
         print(f"\n{'='*70}")
         print(f"✅ PIPELINE COMPLETED: {initial_state.webhook_id}")
@@ -91,10 +153,90 @@ async def execute_pipeline(initial_state: VectorAgentState):
     except Exception as e:
         print(f"\n❌ PIPELINE FAILED: {str(e)}")
         execution_history[initial_state.webhook_id] = {
+            "type": "pipeline",
             "timestamp": datetime.now().isoformat(),
+            "status": "failed",
+            "repo": initial_state.repo_name,
+            "repo_url": initial_state.repo_url,
             "error": str(e),
             "success": False
         }
+        _save_execution_history()
+
+
+@router.post("/discover-endpoints")
+async def discover_repo_endpoints(payload: DiscoverRepoPayload, background_tasks: BackgroundTasks):
+    """
+    Discover API endpoints from a public GitHub repository.
+    Runs asynchronously and can be polled via /pipeline/executions/{webhook_id}.
+    """
+    is_valid, validation_error = validate_github_repo_url(payload.repo_url)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=validation_error)
+
+    webhook_id = f"discover-{uuid.uuid4().hex[:12]}"
+    repo_name = payload.repo_name or payload.repo_url.rstrip("/").split("/")[-1]
+
+    execution_history[webhook_id] = {
+        "type": "discovery",
+        "timestamp": datetime.now().isoformat(),
+        "status": "pending",
+        "repo": repo_name,
+        "repo_url": payload.repo_url,
+        "success": True,
+    }
+    _save_execution_history()
+
+    background_tasks.add_task(execute_discovery, webhook_id, payload.repo_url, repo_name)
+
+    return {
+        "status": "queued",
+        "webhook_id": webhook_id,
+        "message": "Endpoint discovery started",
+        "repo": repo_name,
+        "repo_url": payload.repo_url,
+    }
+
+
+async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
+    """Run repository endpoint discovery and store results in execution history."""
+    execution_history[webhook_id] = {
+        "type": "discovery",
+        "timestamp": datetime.now().isoformat(),
+        "status": "processing",
+        "repo": repo_name,
+        "repo_url": repo_url,
+        "success": True,
+    }
+    _save_execution_history()
+
+    try:
+        discovery_result = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: discover_endpoints_from_repo(repo_url)
+        )
+
+        execution_history[webhook_id] = {
+            "type": "discovery",
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+            "repo": repo_name,
+            "repo_url": repo_url,
+            "success": True,
+            "discovery": discovery_result,
+        }
+        _save_execution_history()
+    except Exception as e:
+        execution_history[webhook_id] = {
+            "type": "discovery",
+            "timestamp": datetime.now().isoformat(),
+            "status": "failed",
+            "repo": repo_name,
+            "repo_url": repo_url,
+            "success": False,
+            "error": str(e),
+        }
+        _save_execution_history()
 
 
 @router.get("/executions")
@@ -117,6 +259,28 @@ def get_execution(webhook_id: str):
         raise HTTPException(status_code=404, detail="Execution not found")
 
     execution = execution_history[webhook_id]
+
+    if execution.get("type") == "discovery":
+        return {
+            "webhook_id": webhook_id,
+            "timestamp": execution["timestamp"],
+            "status": execution.get("status", "pending"),
+            "repo": execution.get("repo"),
+            "repo_url": execution.get("repo_url"),
+            "summary": {
+                "total_tests": 0,
+                "passed": 0,
+                "failed": 0,
+                "success_rate": 0,
+                "endpoints_found": execution.get("discovery", {}).get("scan_summary", {}).get("endpoints_found", 0),
+            },
+            "endpoints": execution.get("discovery", {}).get("endpoints", []),
+            "scan_summary": execution.get("discovery", {}).get("scan_summary", {}),
+            "failures": [],
+            "report_markdown": None,
+            "success": execution.get("success", True),
+            "error": execution.get("error"),
+        }
 
     if execution["success"]:
         state = VectorAgentState(**execution["state"])

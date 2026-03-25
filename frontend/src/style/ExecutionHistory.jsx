@@ -177,9 +177,7 @@ export default function ExecutionHistory() {
             >
               <h2
                 style={{
-                  color: 'white',
                   marginBottom: '20px',
-                  fontSize: '1.2rem',
                   fontWeight: 700,
                   wordBreak: 'break-all',
                   fontSize: '0.95rem',

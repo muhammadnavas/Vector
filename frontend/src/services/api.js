@@ -30,6 +30,31 @@ export async function triggerTestRun(payload) {
 }
 
 /**
+ * Trigger endpoint discovery for a GitHub repository
+ */
+export async function discoverEndpoints(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/pipeline/discover-endpoints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error triggering endpoint discovery:', error);
+    throw error;
+  }
+}
+
+/**
  * Get all executions
  */
 export async function getExecutions() {

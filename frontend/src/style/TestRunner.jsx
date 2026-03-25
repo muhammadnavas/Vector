@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getExecution, triggerTestRun } from '../services/api';
+import { discoverEndpoints, getExecution, triggerTestRun } from '../services/api';
 import './TestRunner.css';
 
 const token = {
@@ -23,6 +23,34 @@ export default function TestRunner() {
   const [loading, setLoading] = useState(false);
   const [currentExecution, setCurrentExecution] = useState(null);
   const [error, setError] = useState(null);
+  const [methodFilter, setMethodFilter] = useState('ALL');
+  const [frameworkFilter, setFrameworkFilter] = useState('ALL');
+  const [authFilter, setAuthFilter] = useState('ALL');
+
+  const pollExecution = (webhookId) => {
+    let retries = 0;
+    const pollInterval = setInterval(async () => {
+      try {
+        const execution = await getExecution(webhookId);
+        if (
+          execution.status === 'completed' ||
+          execution.status === 'failed' ||
+          execution.success === false
+        ) {
+          clearInterval(pollInterval);
+          setCurrentExecution(execution);
+          setLoading(false);
+        }
+      } catch {
+        retries += 1;
+        if (retries > 30) {
+          clearInterval(pollInterval);
+          setError('Execution timeout - check backend logs');
+          setLoading(false);
+        }
+      }
+    }, 1000);
+  };
 
   // Generate random commit SHA and message
   useEffect(() => {
@@ -45,33 +73,13 @@ export default function TestRunner() {
         commit_sha: commitSha,
         commit_message: commitMessage,
       });
-
-      // Poll for execution results
-      let retries = 0;
-      const pollInterval = setInterval(async () => {
-        try {
-          const execution = await getExecution(webhookId);
-          if (execution.status === 'completed' || execution.success === false) {
-            clearInterval(pollInterval);
-            setCurrentExecution(execution);
-            setLoading(false);
-          }
-        } catch (err) {
-          retries++;
-          if (retries > 30) {
-            // Stop polling after 30 seconds
-            clearInterval(pollInterval);
-            setError('Execution timeout - check backend logs');
-            setLoading(false);
-          }
-        }
-      }, 1000);
+      pollExecution(webhookId);
 
       // Set execution with pending status immediately
       setCurrentExecution({
         webhook_id: webhookId,
         status: 'pending',
-        repo: repoName,
+        repo: response.repo || repoName,
         commit: commitSha.slice(0, 7),
       });
     } catch (err) {
@@ -79,6 +87,45 @@ export default function TestRunner() {
       setLoading(false);
     }
   };
+
+  const handleDiscover = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await discoverEndpoints({
+        repo_url: repoUrl,
+        repo_name: repoName,
+      });
+
+      setCurrentExecution({
+        webhook_id: response.webhook_id,
+        status: 'pending',
+        repo: response.repo || repoName,
+        repo_url: repoUrl,
+        commit: '-',
+      });
+
+      pollExecution(response.webhook_id);
+    } catch (err) {
+      setError(err.message || 'Failed to discover endpoints');
+      setLoading(false);
+    }
+  };
+
+  const endpointList = currentExecution?.endpoints || [];
+  const frameworkOptions = [...new Set(endpointList.map((endpoint) => endpoint.framework || 'Unknown'))].sort();
+  const filteredEndpoints = endpointList.filter((endpoint) => {
+    const endpointMethod = endpoint.method || 'ANY';
+    const endpointFramework = endpoint.framework || 'Unknown';
+    const endpointAuth = endpoint.auth_required ? 'AUTH' : 'PUBLIC';
+
+    return (
+      (methodFilter === 'ALL' || endpointMethod === methodFilter) &&
+      (frameworkFilter === 'ALL' || endpointFramework === frameworkFilter) &&
+      (authFilter === 'ALL' || endpointAuth === authFilter)
+    );
+  });
 
   return (
     <div style={{ padding: '24px' }}>
@@ -193,7 +240,6 @@ export default function TestRunner() {
                 background: 'rgba(0,0,0,0.3)',
                 color: 'white',
                 fontSize: '0.9rem',
-                fontFamily: 'inherit',
                 fontFamily: '"Fira Code", monospace',
               }}
               placeholder="abc123def456"
@@ -283,6 +329,29 @@ export default function TestRunner() {
           >
             {loading ? '⏳ Running Tests...' : '▶️ Run Tests'}
           </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleDiscover}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              padding: '14px',
+              borderRadius: '8px',
+              background: loading
+                ? 'rgba(99, 102, 241, 0.5)'
+                : 'linear-gradient(135deg, #2563eb, #0891b2)',
+              color: 'white',
+              border: 'none',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s',
+            }}
+          >
+            {loading ? '⏳ Discovering Endpoints...' : '🔎 Discover Endpoints from Repo URL'}
+          </button>
         </form>
       </div>
 
@@ -351,7 +420,7 @@ export default function TestRunner() {
                     color:
                       currentExecution.status === 'completed'
                         ? token.success
-                        : currentExecution.status === 'pending'
+                        : currentExecution.status === 'pending' || currentExecution.status === 'processing'
                           ? '#fbbf24'
                           : token.danger,
                     fontSize: '1.1rem',
@@ -359,8 +428,9 @@ export default function TestRunner() {
                   }}
                 >
                   {currentExecution.status === 'pending' && '⏳ Pending'}
+                  {currentExecution.status === 'processing' && '⚙️ Processing'}
                   {currentExecution.status === 'completed' && '✅ Completed'}
-                  {currentExecution.success === false && '❌ Failed'}
+                  {(currentExecution.status === 'failed' || currentExecution.success === false) && '❌ Failed'}
                 </div>
               </div>
 
@@ -397,9 +467,7 @@ export default function TestRunner() {
                   backdropFilter: 'blur(12px)',
                 }}
               >
-                <div style={{ color: token.textDim, fontSize: '0.8rem', marginBottom: '8px' }}>
-                  Total Tests
-                </div>
+                <div style={{ color: token.textDim, fontSize: '0.8rem', marginBottom: '8px' }}>Total Tests</div>
                 <div style={{ color: 'white', fontSize: '1.8rem', fontWeight: 700 }}>
                   {currentExecution.summary.total_tests}
                 </div>
@@ -452,10 +520,12 @@ export default function TestRunner() {
                 }}
               >
                 <div style={{ color: token.textDim, fontSize: '0.8rem', marginBottom: '8px' }}>
-                  Success Rate
+                  Success Rate / Endpoints
                 </div>
                 <div style={{ color: token.violet, fontSize: '1.8rem', fontWeight: 700 }}>
-                  {currentExecution.summary.success_rate.toFixed(1)}%
+                  {currentExecution.summary.endpoints_found
+                    ? currentExecution.summary.endpoints_found
+                    : `${currentExecution.summary.success_rate.toFixed(1)}%`}
                 </div>
               </div>
             </div>
@@ -476,14 +546,82 @@ export default function TestRunner() {
               <h3 style={{ color: 'white', marginBottom: '16px', fontSize: '1.1rem' }}>
                 🔗 Tested Endpoints
               </h3>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <select
+                  value={methodFilter}
+                  onChange={(e) => setMethodFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: `1px solid ${token.border}`,
+                    background: 'rgba(0,0,0,0.25)',
+                    color: 'white',
+                  }}
+                >
+                  <option value="ALL">All Methods</option>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="PATCH">PATCH</option>
+                  <option value="DELETE">DELETE</option>
+                  <option value="ANY">ANY</option>
+                </select>
+
+                <select
+                  value={frameworkFilter}
+                  onChange={(e) => setFrameworkFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: `1px solid ${token.border}`,
+                    background: 'rgba(0,0,0,0.25)',
+                    color: 'white',
+                  }}
+                >
+                  <option value="ALL">All Frameworks</option>
+                  {frameworkOptions.map((framework) => (
+                    <option key={framework} value={framework}>
+                      {framework}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={authFilter}
+                  onChange={(e) => setAuthFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: `1px solid ${token.border}`,
+                    background: 'rgba(0,0,0,0.25)',
+                    color: 'white',
+                  }}
+                >
+                  <option value="ALL">All Access</option>
+                  <option value="AUTH">Auth Required</option>
+                  <option value="PUBLIC">Public</option>
+                </select>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {currentExecution.endpoints.map((endpoint, i) => (
+                {filteredEndpoints.map((endpoint, i) => (
                   <div
                     key={i}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      gap: '12px',
                       padding: '12px',
                       background: 'rgba(0,0,0,0.2)',
                       borderRadius: '8px',
@@ -517,12 +655,68 @@ export default function TestRunner() {
                       <span style={{ color: 'white', fontFamily: '"Fira Code", monospace' }}>
                         {endpoint.path}
                       </span>
+
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            color: '#93c5fd',
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            border: '1px solid rgba(59, 130, 246, 0.35)',
+                            borderRadius: '999px',
+                            padding: '2px 8px',
+                          }}
+                        >
+                          {endpoint.framework || 'Unknown'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            color: token.textMuted,
+                            background: 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${token.border}`,
+                            borderRadius: '999px',
+                            padding: '2px 8px',
+                            fontFamily: '"Fira Code", monospace',
+                          }}
+                        >
+                          {endpoint.file || 'source: n/a'}
+                        </span>
+                        {typeof endpoint.confidence === 'number' && (
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              color: '#fcd34d',
+                              background: 'rgba(234, 179, 8, 0.15)',
+                              border: '1px solid rgba(234, 179, 8, 0.3)',
+                              borderRadius: '999px',
+                              padding: '2px 8px',
+                            }}
+                          >
+                            {(endpoint.confidence * 100).toFixed(0)}% confidence
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div style={{ color: token.textMuted, fontSize: '0.875rem' }}>
                       {endpoint.auth_required ? '🔐 Auth Required' : '🔓 Public'}
                     </div>
                   </div>
                 ))}
+
+                {filteredEndpoints.length === 0 && (
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: `1px dashed ${token.border}`,
+                      color: token.textMuted,
+                      textAlign: 'center',
+                    }}
+                  >
+                    No endpoints match the current filters.
+                  </div>
+                )}
               </div>
             </div>
           )}

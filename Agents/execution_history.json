@@ -1,0 +1,1214 @@
+{
+  "discover-613afe6e44c9": {
+    "type": "discovery",
+    "timestamp": "2026-03-25T18:32:11.492347",
+    "status": "completed",
+    "repo": "CampusFlow",
+    "repo_url": "https://github.com/muhammadnavas/CampusFlow",
+    "success": true,
+    "discovery": {
+      "repo_url": "https://github.com/muhammadnavas/CampusFlow",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/events",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/extract-event",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/login",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/register",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/student/:studentId",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/student/:studentId/events",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        }
+      ],
+      "scan_summary": {
+        "files_scanned": 21,
+        "endpoints_found": 7,
+        "framework_counts": {
+          "Express": 7
+        }
+      }
+    }
+  },
+  "discover-b0c1451a4c80": {
+    "type": "discovery",
+    "timestamp": "2026-03-25T18:35:55.980158",
+    "status": "completed",
+    "repo": "AI_Interview_Caller",
+    "repo_url": "https://github.com/muhammadnavas/AI_Interview_Caller.git",
+    "success": true,
+    "discovery": {
+      "repo_url": "https://github.com/muhammadnavas/AI_Interview_Caller.git",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/analytics",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/call-attempts/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/call-candidate",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/call-candidate/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/call-status/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidate-limits",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidate-status/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidates",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/comprehensive-analytics",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/conversations",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "DELETE",
+          "path": "/conversations/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/conversations/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/list-candidates",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/live-conversation/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/make-actual-call",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/recent-conversations",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/system-logs",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-call",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-email",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-json",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/test-webhook",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/twilio-process",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/twilio-voice",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/twilio-voice",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        }
+      ],
+      "scan_summary": {
+        "files_scanned": 4,
+        "endpoints_found": 25,
+        "framework_counts": {
+          "FastAPI": 26
+        }
+      }
+    }
+  },
+  "discover-ba238a473e38": {
+    "type": "discovery",
+    "timestamp": "2026-03-25T18:38:51.597957",
+    "status": "completed",
+    "repo": "AI_Interview_Caller",
+    "repo_url": "https://github.com/muhammadnavas/AI_Interview_Caller.git",
+    "success": true,
+    "discovery": {
+      "repo_url": "https://github.com/muhammadnavas/AI_Interview_Caller.git",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "frontend/app/page.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "file": "frontend/app/page.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.72
+        },
+        {
+          "method": "GET",
+          "path": "/analytics",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/call-attempts/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/call-candidate",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/call-candidate/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/call-status/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidate-limits",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidate-status/{candidate_id}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/candidates",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/comprehensive-analytics",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/conversations",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "DELETE",
+          "path": "/conversations/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/conversations/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/list-candidates",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/live-conversation/{call_sid}",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/make-actual-call",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/recent-conversations",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/system-logs",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-call",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-email",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/test-json",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/test-webhook",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/twilio-process",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "GET",
+          "path": "/twilio-voice",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        },
+        {
+          "method": "POST",
+          "path": "/twilio-voice",
+          "file": "backend/main.py",
+          "framework": "FastAPI",
+          "auth_required": true,
+          "confidence": 0.95
+        }
+      ],
+      "scan_summary": {
+        "files_scanned": 4,
+        "endpoints_found": 27,
+        "framework_counts": {
+          "FastAPI": 26,
+          "Frontend Fetch": 4
+        }
+      }
+    }
+  },
+  "discover-d7c379585da1": {
+    "type": "discovery",
+    "timestamp": "2026-03-25T18:39:56.479313",
+    "status": "completed",
+    "repo": "EcoFinds",
+    "repo_url": "https://github.com/muhammadnavas/EcoFinds.git",
+    "success": true,
+    "discovery": {
+      "repo_url": "https://github.com/muhammadnavas/EcoFinds.git",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "file": "frontend/src/components/SmartRecommendations.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/*",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/404",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/:id/reviews",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/:id/reviews",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/:productId/reviews/:reviewId",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/:productId/reviews/:reviewId",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/:slug",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/:slug/products",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/add-product",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/analytics/recommendation-click",
+          "file": "frontend/src/components/SmartRecommendations.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "file": "frontend/src/context/AuthContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "file": "frontend/src/context/AuthProvider.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/me",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/me",
+          "file": "frontend/src/context/AuthContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/register",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/register",
+          "file": "frontend/src/context/AuthContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/register",
+          "file": "frontend/src/context/AuthProvider.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "PUT",
+          "path": "/api/auth/update-profile",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/cart",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/cart/add",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/cart/clear",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/cart/remove",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/api/cart/select",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/api/cart/update",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/categories",
+          "file": "frontend/src/components/CategoryManager.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/categories",
+          "file": "frontend/src/components/CategoryFilter.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/categories",
+          "file": "frontend/src/components/CategoryGrid.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/categories",
+          "file": "frontend/src/components/AddProduct.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/categories/",
+          "file": "frontend/src/components/CategoryManager.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/api/confirm-payment",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "POST",
+          "path": "/api/create-payment-intent",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/api/notifications",
+          "file": "frontend/src/context/NotificationContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/notifications/",
+          "file": "frontend/src/context/NotificationContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "PUT",
+          "path": "/api/notifications/preferences",
+          "file": "frontend/src/context/NotificationContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/notifications/read-all",
+          "file": "frontend/src/context/NotificationContext.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/orders",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/orders/:orderId",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "PUT",
+          "path": "/api/orders/:orderId/status",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/orders/stats/summary",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/payment-status/:transactionId",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/payments/:email",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/products",
+          "file": "frontend/src/components/ProductDetail.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "GET",
+          "path": "/api/products",
+          "file": "frontend/src/pages/HomePage.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.78
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/products/",
+          "file": "frontend/src/components/TouchOptimizedCard.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "GET",
+          "path": "/api/products/",
+          "file": "frontend/src/components/ProductDetail.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.72
+        },
+        {
+          "method": "GET",
+          "path": "/api/products/",
+          "file": "frontend/src/components/QuickViewModal.js",
+          "framework": "Frontend Fetch",
+          "auth_required": false,
+          "confidence": 0.72
+        },
+        {
+          "method": "GET",
+          "path": "/api/products/",
+          "file": "frontend/src/components/Reviews.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/api/products/",
+          "file": "frontend/src/components/ProductReviews.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/api/products/",
+          "file": "frontend/src/components/Reviews.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "POST",
+          "path": "/api/push/subscribe",
+          "file": "frontend/src/utils/pushNotificationService.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/push/unsubscribe",
+          "file": "frontend/src/utils/pushNotificationService.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.78
+        },
+        {
+          "method": "POST",
+          "path": "/api/refund-payment",
+          "file": "backend/server.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/",
+          "file": "frontend/src/components/ProductReviews.js",
+          "framework": "Frontend Fetch",
+          "auth_required": true,
+          "confidence": 0.72
+        },
+        {
+          "method": "ROUTE",
+          "path": "/cart",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/categories",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/category/:categoryName",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/dashboard",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/help",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/login",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/my-listings",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/my-listings",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/payment",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/product/:id",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/profile",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/search/analytics",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/search/suggestions",
+          "file": "backend/routes/products.js",
+          "framework": "Express",
+          "auth_required": true,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/sell",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "GET",
+          "path": "/stats/overview",
+          "file": "backend/routes/categories.js",
+          "framework": "Express",
+          "auth_required": false,
+          "confidence": 0.9
+        },
+        {
+          "method": "ROUTE",
+          "path": "/wishlist",
+          "file": "frontend/src/AppRouter.js",
+          "framework": "Frontend Route",
+          "auth_required": false,
+          "confidence": 0.9
+        }
+      ],
+      "scan_summary": {
+        "files_scanned": 81,
+        "endpoints_found": 81,
+        "framework_counts": {
+          "Express": 38,
+          "Frontend Route": 16,
+          "Frontend Fetch": 30
+        }
+      }
+    }
+  },
+  "test-1774444254894": {
+    "type": "pipeline",
+    "timestamp": "2026-03-25T18:40:54.970320",
+    "status": "failed",
+    "repo": "EcoFinds",
+    "repo_url": "https://github.com/muhammadnavas/EcoFinds.git",
+    "error": "No synchronous function provided to \"github_agent\".\nEither initialize with a synchronous function or invoke via the async API (ainvoke, astream, etc.)",
+    "success": false
+  }
+}
