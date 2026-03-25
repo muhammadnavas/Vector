@@ -4,6 +4,7 @@ from typing import Optional
 import asyncio
 from datetime import datetime
 import json
+import os
 from pathlib import Path
 import uuid
 from graph import vector_pipeline
@@ -12,7 +13,8 @@ from discovery.service import discover_endpoints_from_repo, validate_github_repo
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
-HISTORY_FILE = Path(__file__).resolve().parent.parent / "execution_history.json"
+APPDATA_DIR = Path(os.getenv("LOCALAPPDATA", Path.home() / ".vector")) / "Vector"
+HISTORY_FILE = APPDATA_DIR / "execution_history.json"
 
 
 def _load_execution_history() -> dict:
@@ -36,6 +38,7 @@ def _load_execution_history() -> dict:
 
 
 def _save_execution_history() -> None:
+    APPDATA_DIR.mkdir(parents=True, exist_ok=True)
     HISTORY_FILE.write_text(json.dumps(execution_history, indent=2), encoding="utf-8")
 
 
