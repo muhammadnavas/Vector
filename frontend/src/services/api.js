@@ -44,11 +44,20 @@ export async function discoverEndpoints(payload) {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
-      throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+      const error = new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+      error.status = response.status;
+      throw error;
     }
 
     return await response.json();
   } catch (error) {
+    if (error instanceof TypeError && String(error.message || '').includes('Failed to fetch')) {
+      const offlineError = new Error('Backend API is not reachable at http://localhost:8000. Start backend with: cd Agents && python main.py');
+      offlineError.status = 0;
+      console.error('Error triggering endpoint discovery:', offlineError);
+      throw offlineError;
+    }
+
     console.error('Error triggering endpoint discovery:', error);
     throw error;
   }
@@ -80,7 +89,10 @@ export async function getExecution(webhookId) {
     const response = await fetch(`${API_BASE_URL}/pipeline/executions/${webhookId}`);
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const error = new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+      error.status = response.status;
+      throw error;
     }
 
     return await response.json();

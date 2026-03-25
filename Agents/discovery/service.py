@@ -1,7 +1,7 @@
 import io
 import re
 import zipfile
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -96,6 +96,78 @@ def _extract_path_from_url_literal(url: str) -> str:
         cleaned = "/" + cleaned
 
     return cleaned or "/"
+
+
+def _join_base_and_path(base_api_url: str, endpoint_path: str) -> str:
+    return base_api_url.rstrip("/") + "/" + endpoint_path.lstrip("/")
+
+
+def _is_path_testable(path: str) -> bool:
+    # Skip dynamic placeholders where concrete IDs are unknown.
+    return "{" not in path and "}" not in path and ":" not in path and "*" not in path
+
+
+def _run_live_tests(endpoints: list[dict], base_api_url: str) -> Dict[str, Any]:
+    tested = 0
+    passed = 0
+    failed = 0
+    skipped = 0
+    corrections = []
+
+    for endpoint in endpoints:
+        method = (endpoint.get("method") or "").upper()
+        path = endpoint.get("path") or "/"
+
+        # Keep checks safe and side-effect free in v1.
+        if method not in {"GET", "HEAD", "OPTIONS"}:
+            skipped += 1
+            continue
+
+        if not _is_path_testable(path):
+            skipped += 1
+            continue
+
+        url = _join_base_and_path(base_api_url, path)
+        tested += 1
+
+        try:
+            response = requests.request(method, url, timeout=8, allow_redirects=False)
+            if response.status_code < 400:
+                passed += 1
+                continue
+
+            failed += 1
+            corrections.append({
+                "test_name": f"[LIVE CHECK] {method} {path}",
+                "error": f"HTTP {response.status_code} returned by {url}",
+                "root_cause": "Endpoint is reachable but response indicates client/server error.",
+                "suggested_fix": "Verify route handler logic, input validation, and auth middleware for this endpoint.",
+                "severity": "HIGH" if response.status_code >= 500 else "MEDIUM",
+                "affected_file": endpoint.get("file") or "unknown",
+                "line_number": 0,
+            })
+        except Exception as exc:
+            failed += 1
+            corrections.append({
+                "test_name": f"[LIVE CHECK] {method} {path}",
+                "error": f"Request failed for {url}: {str(exc)}",
+                "root_cause": "Service unavailable, wrong base URL, CORS/network issue, or endpoint not deployed.",
+                "suggested_fix": "Confirm the base API URL is correct and the service is running with this route exposed.",
+                "severity": "HIGH",
+                "affected_file": endpoint.get("file") or "unknown",
+                "line_number": 0,
+            })
+
+    success_rate = (passed / tested * 100) if tested > 0 else 0
+    return {
+        "base_api_url": base_api_url,
+        "tested": tested,
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
+        "success_rate": success_rate,
+        "corrections": corrections,
+    }
 
 
 def _discover_fastapi(path: str, content: str) -> list[dict]:
@@ -280,7 +352,7 @@ def _discover_frontend_routes(path: str, content: str) -> list[dict]:
     return results
 
 
-def discover_endpoints_from_repo(repo_url: str) -> dict:
+def discover_endpoints_from_repo(repo_url: str, base_api_url: Optional[str] = None) -> dict:
     """Discover API endpoints from a public GitHub repository using static analysis."""
     zip_bytes = _download_repo_zip(repo_url)
     files = _extract_text_files(zip_bytes)
@@ -319,6 +391,12 @@ def discover_endpoints_from_repo(repo_url: str) -> dict:
     unique_endpoints = list(dedup.values())
     unique_endpoints.sort(key=lambda e: (e["path"], e["method"], e["file"]))
 
+    live_test_summary = None
+    corrections = []
+    if base_api_url:
+        live_test_summary = _run_live_tests(unique_endpoints, base_api_url)
+        corrections = live_test_summary.get("corrections", [])
+
     return {
         "repo_url": repo_url,
         "endpoints": unique_endpoints,
@@ -327,4 +405,6 @@ def discover_endpoints_from_repo(repo_url: str) -> dict:
             "endpoints_found": len(unique_endpoints),
             "framework_counts": framework_counts,
         },
+        "live_test_summary": live_test_summary,
+        "corrections": corrections,
     }

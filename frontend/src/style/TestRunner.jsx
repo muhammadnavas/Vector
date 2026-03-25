@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { discoverEndpoints, getExecution, triggerTestRun } from '../services/api';
 import './TestRunner.css';
 
@@ -18,6 +18,7 @@ const token = {
 export default function TestRunner() {
   const [repoName, setRepoName] = useState('api-service');
   const [repoUrl, setRepoUrl] = useState('https://github.com/company/api-service');
+  const [baseApiUrl, setBaseApiUrl] = useState('');
   const [commitSha, setCommitSha] = useState('');
   const [commitMessage, setCommitMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,10 +27,19 @@ export default function TestRunner() {
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [frameworkFilter, setFrameworkFilter] = useState('ALL');
   const [authFilter, setAuthFilter] = useState('ALL');
+  const pollIntervalRef = useRef(null);
+
+  const clearPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
 
   const pollExecution = (webhookId) => {
+    clearPolling();
     let retries = 0;
-    const pollInterval = setInterval(async () => {
+    pollIntervalRef.current = setInterval(async () => {
       try {
         const execution = await getExecution(webhookId);
         if (
@@ -37,20 +47,36 @@ export default function TestRunner() {
           execution.status === 'failed' ||
           execution.success === false
         ) {
-          clearInterval(pollInterval);
+          clearPolling();
           setCurrentExecution(execution);
           setLoading(false);
         }
-      } catch {
+      } catch (err) {
+        const status = err?.status;
+        const message = String(err?.message || '').toLowerCase();
+
+        if (status === 404 || message.includes('execution not found')) {
+          clearPolling();
+          setError('Execution not found. It may have expired or backend was restarted. Please run discovery again.');
+          setLoading(false);
+          return;
+        }
+
         retries += 1;
         if (retries > 30) {
-          clearInterval(pollInterval);
+          clearPolling();
           setError('Execution timeout - check backend logs');
           setLoading(false);
         }
       }
     }, 1000);
   };
+
+  useEffect(() => {
+    return () => {
+      clearPolling();
+    };
+  }, []);
 
   // Generate random commit SHA and message
   useEffect(() => {
@@ -60,6 +86,7 @@ export default function TestRunner() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    clearPolling();
     setLoading(true);
     setError(null);
 
@@ -89,6 +116,7 @@ export default function TestRunner() {
   };
 
   const handleDiscover = async () => {
+    clearPolling();
     setLoading(true);
     setError(null);
 
@@ -96,6 +124,7 @@ export default function TestRunner() {
       const response = await discoverEndpoints({
         repo_url: repoUrl,
         repo_name: repoName,
+        base_api_url: baseApiUrl || null,
       });
 
       setCurrentExecution({
@@ -212,6 +241,37 @@ export default function TestRunner() {
                 fontFamily: 'inherit',
               }}
               placeholder="https://github.com/user/repo"
+            />
+          </div>
+
+          {/* Base API URL for Live Checks */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                color: token.textMuted,
+                fontSize: '0.875rem',
+                marginBottom: '8px',
+                fontWeight: 600,
+              }}
+            >
+              Base API URL (optional)
+            </label>
+            <input
+              type="text"
+              value={baseApiUrl}
+              onChange={(e) => setBaseApiUrl(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: `1px solid ${token.border}`,
+                background: 'rgba(0,0,0,0.3)',
+                color: 'white',
+                fontSize: '0.9rem',
+                fontFamily: 'inherit',
+              }}
+              placeholder="https://api.example.com"
             />
           </div>
 
@@ -574,6 +634,7 @@ export default function TestRunner() {
                   <option value="PATCH">PATCH</option>
                   <option value="DELETE">DELETE</option>
                   <option value="ANY">ANY</option>
+                  <option value="ROUTE">ROUTE</option>
                 </select>
 
                 <select

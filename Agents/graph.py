@@ -15,12 +15,12 @@ from nodes import (
 )
 
 
-def should_analyze_failures(state: dict) -> str:
+def should_analyze_failures(state) -> str:
     """
     Conditional edge: If tests failed, route to failure analyzer
     Otherwise, go directly to report generator
     """
-    state_obj = VectorAgentState(**state)
+    state_obj = state if isinstance(state, VectorAgentState) else VectorAgentState(**state)
     if state_obj.tests_failed > 0:
         return "analyze_failures"
     else:

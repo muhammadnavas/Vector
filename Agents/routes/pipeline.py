@@ -56,6 +56,7 @@ class DiscoverRepoPayload(BaseModel):
     """Payload for endpoint discovery from a public GitHub repository."""
     repo_url: str
     repo_name: Optional[str] = None
+    base_api_url: Optional[str] = None
 
 
 @router.post("/webhook/github")
@@ -119,15 +120,16 @@ async def execute_pipeline(initial_state: VectorAgentState):
         # Convert to dict for LangGraph
         state_dict = initial_state.dict()
 
-        # Execute the compiled graph
+        # Execute the compiled graph via async API because nodes are async.
         print("\n[PIPELINE] Invoking LangGraph workflow...")
-        final_state_dict = await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: vector_pipeline.invoke(state_dict)
-        )
+        final_state_result = await vector_pipeline.ainvoke(state_dict)
 
-        # Convert back to state object
-        final_state = VectorAgentState(**final_state_dict)
+        # LangGraph can return either dict or typed state depending on runtime path.
+        final_state = (
+            final_state_result
+            if isinstance(final_state_result, VectorAgentState)
+            else VectorAgentState(**final_state_result)
+        )
 
         # Store in history
         execution_history[initial_state.webhook_id] = {
@@ -183,11 +185,12 @@ async def discover_repo_endpoints(payload: DiscoverRepoPayload, background_tasks
         "status": "pending",
         "repo": repo_name,
         "repo_url": payload.repo_url,
+        "base_api_url": payload.base_api_url,
         "success": True,
     }
     _save_execution_history()
 
-    background_tasks.add_task(execute_discovery, webhook_id, payload.repo_url, repo_name)
+    background_tasks.add_task(execute_discovery, webhook_id, payload.repo_url, repo_name, payload.base_api_url)
 
     return {
         "status": "queued",
@@ -195,10 +198,11 @@ async def discover_repo_endpoints(payload: DiscoverRepoPayload, background_tasks
         "message": "Endpoint discovery started",
         "repo": repo_name,
         "repo_url": payload.repo_url,
+        "base_api_url": payload.base_api_url,
     }
 
 
-async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
+async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str, base_api_url: Optional[str] = None):
     """Run repository endpoint discovery and store results in execution history."""
     execution_history[webhook_id] = {
         "type": "discovery",
@@ -206,6 +210,7 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
         "status": "processing",
         "repo": repo_name,
         "repo_url": repo_url,
+        "base_api_url": base_api_url,
         "success": True,
     }
     _save_execution_history()
@@ -213,7 +218,7 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
     try:
         discovery_result = await asyncio.get_event_loop().run_in_executor(
             None,
-            lambda: discover_endpoints_from_repo(repo_url)
+            lambda: discover_endpoints_from_repo(repo_url, base_api_url=base_api_url)
         )
 
         execution_history[webhook_id] = {
@@ -222,6 +227,7 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
             "status": "completed",
             "repo": repo_name,
             "repo_url": repo_url,
+            "base_api_url": base_api_url,
             "success": True,
             "discovery": discovery_result,
         }
@@ -233,6 +239,7 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str):
             "status": "failed",
             "repo": repo_name,
             "repo_url": repo_url,
+            "base_api_url": base_api_url,
             "success": False,
             "error": str(e),
         }
@@ -261,22 +268,30 @@ def get_execution(webhook_id: str):
     execution = execution_history[webhook_id]
 
     if execution.get("type") == "discovery":
+        live_summary = execution.get("discovery", {}).get("live_test_summary") or {}
+        tested = live_summary.get("tested", 0)
+        passed = live_summary.get("passed", 0)
+        failed = live_summary.get("failed", 0)
+        success_rate = live_summary.get("success_rate", 0)
+
         return {
             "webhook_id": webhook_id,
             "timestamp": execution["timestamp"],
             "status": execution.get("status", "pending"),
             "repo": execution.get("repo"),
             "repo_url": execution.get("repo_url"),
+            "base_api_url": execution.get("base_api_url"),
             "summary": {
-                "total_tests": 0,
-                "passed": 0,
-                "failed": 0,
-                "success_rate": 0,
+                "total_tests": tested,
+                "passed": passed,
+                "failed": failed,
+                "success_rate": success_rate,
                 "endpoints_found": execution.get("discovery", {}).get("scan_summary", {}).get("endpoints_found", 0),
             },
             "endpoints": execution.get("discovery", {}).get("endpoints", []),
             "scan_summary": execution.get("discovery", {}).get("scan_summary", {}),
-            "failures": [],
+            "live_test_summary": live_summary,
+            "failures": execution.get("discovery", {}).get("corrections", []),
             "report_markdown": None,
             "success": execution.get("success", True),
             "error": execution.get("error"),
