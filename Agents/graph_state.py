@@ -44,6 +44,7 @@ class VectorAgentState(BaseModel):
     webhook_id: str
     repo_name: str
     repo_url: str
+    base_api_url: Optional[str] = None
     commit_sha: str
     commit_message: str
     files_changed: List[CodeChange] = []

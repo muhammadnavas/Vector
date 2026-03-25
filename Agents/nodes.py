@@ -3,9 +3,40 @@ LangGraph Agent Nodes for Vector Pipeline
 Each node represents one of the 6 intelligent agents
 """
 
-import json
+import re
+import time
 from typing import Any
+
+import requests
+
+from discovery.service import discover_endpoints_from_repo
 from graph_state import VectorAgentState, CodeChange, TestCase, TestResult, TestStatus
+
+
+TESTABLE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def _contains_path_params(path: str) -> bool:
+    return bool(re.search(r"\{[^}]+\}|:[^/]+|\*", path or ""))
+
+
+def _make_url(base_api_url: str, endpoint_path: str) -> str:
+    return base_api_url.rstrip("/") + "/" + endpoint_path.lstrip("/")
+
+
+def _parse_method_and_path_from_test_name(test_name: str) -> tuple[str, str]:
+    # Pattern: [TAG] METHOD /path - description
+    match = re.search(r"\]\s+([A-Z]+)\s+([^\s]+)\s+-", test_name)
+    if not match:
+        return "UNKNOWN", "unknown"
+    return match.group(1), match.group(2)
+
+
+def _source_file_for_endpoint(state: VectorAgentState, method: str, path: str) -> str:
+    for endpoint in state.analyzed_endpoints:
+        if endpoint.get("method") == method and endpoint.get("path") == path:
+            return endpoint.get("file") or "unknown"
+    return "unknown"
 
 
 # ============================================================================
@@ -19,30 +50,44 @@ async def github_integration_agent(state: VectorAgentState) -> dict:
     print(f"\n🔗 [GITHUB AGENT] Processing webhook: {state.webhook_id}")
     print(f"   Repo: {state.repo_name} | Commit: {state.commit_sha[:7]}")
 
-    # Simulate parsing GitHub diff and detecting changed files
-    changes = [
-        CodeChange(
-            file="routes/users.py",
-            lines_added=47,
-            lines_removed=12,
-            is_api_route=True,
-            methods_affected=["POST /users", "GET /users/{id}"],
-            content_snippet="@app.post('/users')\ndef create_user(user: UserSchema):\n    return user.save()"
-        ),
-        CodeChange(
-            file="models/user.py",
-            lines_added=15,
-            lines_removed=5,
-            is_api_route=False,
-            methods_affected=[],
-            content_snippet="class User(BaseModel):\n    email: str\n    name: str"
-        ),
-    ]
+    try:
+        discovered = discover_endpoints_from_repo(state.repo_url)
+        endpoints = discovered.get("endpoints", [])
 
-    state.files_changed = changes
+        grouped: dict[str, list[str]] = {}
+        for endpoint in endpoints:
+            grouped.setdefault(endpoint.get("file") or "unknown", []).append(
+                f"{endpoint.get('method', 'UNKNOWN')} {endpoint.get('path', '/') }"
+            )
+
+        changes = []
+        for file_name, methods in grouped.items():
+            changes.append(
+                CodeChange(
+                    file=file_name,
+                    lines_added=0,
+                    lines_removed=0,
+                    is_api_route=True,
+                    methods_affected=methods,
+                    content_snippet="Detected via static repository scan",
+                )
+            )
+
+        state.files_changed = changes
+        state.analyzed_endpoints = endpoints
+        state.security_notes = [
+            "Endpoint list was generated from static repository analysis.",
+            "Use Base API URL in test run for real runtime validation.",
+        ]
+    except Exception as exc:
+        state.files_changed = []
+        state.analyzed_endpoints = []
+        state.security_notes = [f"Endpoint discovery failed: {str(exc)}"]
+
     state.status = "files_analyzed"
 
-    print(f"   ✓ Found {len(changes)} changed files ({sum(c.lines_added for c in changes)} lines added)")
+    print(f"   ✓ Found {len(state.files_changed)} route/source files from repository scan")
+    print(f"   ✓ Endpoints discovered: {len(state.analyzed_endpoints)}")
     return state.dict()
 
 
@@ -56,24 +101,19 @@ async def code_understanding_agent(state: VectorAgentState) -> dict:
     """
     print(f"\n🧠 [CODE AGENT] Analyzing {len(state.files_changed)} files...")
 
-    api_files = [f for f in state.files_changed if f.is_api_route]
+    endpoints = state.analyzed_endpoints
 
-    # Simulate LLM analysis
-    endpoints = []
-    for change in api_files:
-        for method in change.methods_affected:
-            endpoints.append({
-                "method": method.split()[0],
-                "path": method.split()[1],
-                "file": change.file,
-                "auth_required": "email" in change.content_snippet.lower()
-            })
+    protected_count = len([e for e in endpoints if e.get("auth_required")])
+    if protected_count > 0:
+        state.auth_requirements = (
+            f"{protected_count}/{len(endpoints)} discovered endpoints appear to require authentication"
+        )
+    else:
+        state.auth_requirements = "No clear auth requirement detected from static analysis"
 
-    state.analyzed_endpoints = endpoints
-    state.auth_requirements = "Bearer token required for all endpoints"
-    state.security_notes = [
-        "Input validation should be added for email field",
-        "Rate limiting recommended for POST endpoints"
+    state.security_notes = state.security_notes + [
+        "Static analysis may miss runtime middleware and router prefixes.",
+        "Use live test failures as the primary source of real issues.",
     ]
 
     print(f"   ✓ Analyzed {len(endpoints)} endpoints")
@@ -103,53 +143,36 @@ async def test_case_generator_agent(state: VectorAgentState) -> dict:
     test_id = 1
 
     for endpoint in state.analyzed_endpoints:
-        # Positive test
+        method = (endpoint.get("method") or "").upper()
+        path = endpoint.get("path") or "/"
+
+        if method not in TESTABLE_METHODS:
+            continue
+        if _contains_path_params(path):
+            continue
+
+        headers = {"Accept": "application/json"}
+        if endpoint.get("auth_required"):
+            headers["Authorization"] = "Bearer <token>"
+
         test_cases.append(TestCase(
             id=f"test_{test_id}",
-            name=f"[POSITIVE] {endpoint['method']} {endpoint['path']} - Valid request",
-            method=endpoint["method"],
-            endpoint=endpoint["path"],
-            headers={"Content-Type": "application/json", "Authorization": "Bearer token123"},
-            body={"email": "user@test.com", "name": "Test User"},
-            expected_status=201 if endpoint["method"] == "POST" else 200,
-            expected_response_keys=["id", "email", "name"]
+            name=f"[LIVE] {method} {path} - Reachable endpoint",
+            method=method,
+            endpoint=path,
+            headers=headers,
+            expected_status=200,
+            expected_response_keys=[]
         ))
         test_id += 1
 
-        # Negative test - Missing required field
-        test_cases.append(TestCase(
-            id=f"test_{test_id}",
-            name=f"[NEGATIVE] {endpoint['method']} {endpoint['path']} - Missing email",
-            method=endpoint["method"],
-            endpoint=endpoint["path"],
-            headers={"Content-Type": "application/json"},
-            body={"name": "Test User"},
-            expected_status=400,
-            expected_response_keys=["error", "message"]
-        ))
-        test_id += 1
-
-        # Edge case - Empty string
-        test_cases.append(TestCase(
-            id=f"test_{test_id}",
-            name=f"[EDGE CASE] {endpoint['method']} {endpoint['path']} - Empty email",
-            method=endpoint["method"],
-            endpoint=endpoint["path"],
-            headers={"Content-Type": "application/json"},
-            body={"email": "", "name": "Test"},
-            expected_status=400,
-        ))
-        test_id += 1
-
-        # Auth failure
         if endpoint.get("auth_required"):
             test_cases.append(TestCase(
                 id=f"test_{test_id}",
-                name=f"[AUTH] {endpoint['method']} {endpoint['path']} - No auth token",
-                method=endpoint["method"],
-                endpoint=endpoint["path"],
-                headers={"Content-Type": "application/json"},
-                body={"email": "user@test.com", "name": "Test"},
+                name=f"[AUTH] {method} {path} - No auth token",
+                method=method,
+                endpoint=path,
+                headers={"Accept": "application/json"},
                 expected_status=401,
             ))
             test_id += 1
@@ -159,9 +182,7 @@ async def test_case_generator_agent(state: VectorAgentState) -> dict:
     state.status = "tests_generated"
 
     print(f"   ✓ Generated {len(test_cases)} test cases")
-    print(f"      - {len([t for t in test_cases if 'POSITIVE' in t.name])} positive tests")
-    print(f"      - {len([t for t in test_cases if 'NEGATIVE' in t.name])} negative tests")
-    print(f"      - {len([t for t in test_cases if 'EDGE CASE' in t.name])} edge case tests")
+    print(f"      - {len([t for t in test_cases if 'LIVE' in t.name])} live reachability tests")
     print(f"      - {len([t for t in test_cases if 'AUTH' in t.name])} auth tests")
 
     return state.dict()
@@ -181,21 +202,73 @@ async def test_executor_agent(state: VectorAgentState) -> dict:
     passed = 0
     failed = 0
 
-    for test in state.generated_tests:
-        # Simulate test execution
-        # In real scenario, this would make actual API calls
-        is_pass = "POSITIVE" in test.name or "missing email" not in test.name.lower()
+    if not state.base_api_url:
+        print("   ⚠️  Base API URL not provided. Live execution cannot run.")
 
-        result = TestResult(
-            test_id=test.id,
-            test_name=test.name,
-            status=TestStatus.PASSED if is_pass else TestStatus.FAILED,
-            actual_status=test.expected_status if is_pass else 500,
-            expected_status=test.expected_status,
-            response_body={"id": 1, "email": "user@test.com"} if is_pass else None,
-            error_message=None if is_pass else "Internal Server Error - Null check missing for user.email",
-            execution_time_ms=45.2 if is_pass else 120.5
-        )
+    for test in state.generated_tests:
+        if not state.base_api_url:
+            result = TestResult(
+                test_id=test.id,
+                test_name=test.name,
+                status=TestStatus.FAILED,
+                actual_status=0,
+                expected_status=test.expected_status,
+                response_body=None,
+                error_message="Base API URL is required for real-world endpoint checks",
+                execution_time_ms=0,
+            )
+            results.append(result)
+            failed += 1
+            continue
+
+        request_url = _make_url(state.base_api_url, test.endpoint)
+        start_time = time.perf_counter()
+
+        try:
+            response = requests.request(
+                method=test.method,
+                url=request_url,
+                headers=test.headers,
+                json=test.body,
+                timeout=10,
+                allow_redirects=False,
+            )
+            elapsed = (time.perf_counter() - start_time) * 1000
+            actual_status = response.status_code
+
+            if "[AUTH]" in test.name:
+                is_pass = actual_status in {401, 403}
+            else:
+                is_pass = 200 <= actual_status < 400
+
+            try:
+                response_body = response.json()
+            except Exception:
+                response_body = None
+
+            result = TestResult(
+                test_id=test.id,
+                test_name=test.name,
+                status=TestStatus.PASSED if is_pass else TestStatus.FAILED,
+                actual_status=actual_status,
+                expected_status=test.expected_status,
+                response_body=response_body,
+                error_message=None if is_pass else f"HTTP {actual_status} from {request_url}",
+                execution_time_ms=elapsed,
+            )
+        except Exception as exc:
+            elapsed = (time.perf_counter() - start_time) * 1000
+            result = TestResult(
+                test_id=test.id,
+                test_name=test.name,
+                status=TestStatus.FAILED,
+                actual_status=0,
+                expected_status=test.expected_status,
+                response_body=None,
+                error_message=f"Request failed for {request_url}: {str(exc)}",
+                execution_time_ms=elapsed,
+            )
+
         results.append(result)
 
         if result.status == TestStatus.PASSED:
@@ -237,15 +310,42 @@ async def failure_analysis_agent(state: VectorAgentState) -> dict:
 
     analysis = []
     for failure in failed_tests:
+        method, path = _parse_method_and_path_from_test_name(failure.test_name)
+        source_file = _source_file_for_endpoint(state, method, path)
+
+        root_cause = "Unexpected endpoint failure"
+        suggested_fix = "Inspect endpoint handler and runtime configuration"
+        severity = "MEDIUM"
+
+        if failure.actual_status == 0:
+            root_cause = "Service not reachable or request execution failed"
+            suggested_fix = "Verify Base API URL, network accessibility, and service availability"
+            severity = "HIGH"
+        elif failure.actual_status == 404:
+            root_cause = "Route not found at runtime"
+            suggested_fix = "Check route prefix/versioning and deployment routing configuration"
+            severity = "HIGH"
+        elif failure.actual_status in {401, 403}:
+            root_cause = "Authentication/authorization required"
+            suggested_fix = "Provide valid auth token or adjust endpoint auth policy"
+            severity = "MEDIUM"
+        elif 500 <= failure.actual_status < 600:
+            root_cause = "Unhandled server-side exception"
+            suggested_fix = "Inspect server logs/stack trace and add defensive validation/error handling"
+            severity = "HIGH"
+        elif failure.actual_status in {400, 422}:
+            root_cause = "Request validation failed"
+            suggested_fix = "Verify required query/path/body parameters and request schema"
+
         analysis_item = {
             "test_id": failure.test_id,
             "test_name": failure.test_name,
             "error": failure.error_message,
-            "root_cause": "Null pointer exception in validation layer",
-            "suggested_fix": "Add null check: if not user.email: raise ValueError('Email required')",
-            "severity": "HIGH",
-            "affected_file": "routes/users.py",
-            "line_number": 42
+            "root_cause": root_cause,
+            "suggested_fix": suggested_fix,
+            "severity": severity,
+            "affected_file": source_file,
+            "line_number": 0
         }
         analysis.append(analysis_item)
 
@@ -273,6 +373,8 @@ async def report_generator_agent(state: VectorAgentState) -> dict:
     """
     print(f"\n📊 [REPORT GENERATOR] Creating reports...")
 
+    success_rate = (state.tests_passed / state.total_tests_run * 100) if state.total_tests_run > 0 else 0
+
     # Generate Markdown Report
     markdown_report = f"""# Vector API Testing Report
 
@@ -284,7 +386,7 @@ async def report_generator_agent(state: VectorAgentState) -> dict:
 - **Total Tests**: {state.total_tests_run}
 - **Passed**: {state.tests_passed} ✓
 - **Failed**: {state.tests_failed} ✗
-- **Success Rate**: {(state.tests_passed/state.total_tests_run*100):.1f}%
+- **Success Rate**: {success_rate:.1f}%
 
 ## Analyzed Endpoints
 """

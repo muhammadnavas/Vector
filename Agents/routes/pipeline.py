@@ -51,6 +51,7 @@ class WebhookPayload(BaseModel):
     webhook_id: str
     repo_name: str
     repo_url: str
+    base_api_url: Optional[str] = None
     commit_sha: str
     commit_message: str
 
@@ -74,6 +75,7 @@ async def receive_github_webhook(payload: WebhookPayload, background_tasks: Back
         webhook_id=payload.webhook_id,
         repo_name=payload.repo_name,
         repo_url=payload.repo_url,
+        base_api_url=payload.base_api_url,
         commit_sha=payload.commit_sha,
         commit_message=payload.commit_message,
         status="pending"
@@ -85,6 +87,7 @@ async def receive_github_webhook(payload: WebhookPayload, background_tasks: Back
         "status": "pending",
         "repo": payload.repo_name,
         "repo_url": payload.repo_url,
+        "base_api_url": payload.base_api_url,
         "success": True,
     }
     _save_execution_history()
@@ -153,7 +156,8 @@ async def execute_pipeline(initial_state: VectorAgentState):
         print(f"   Tests Run: {final_state.total_tests_run}")
         print(f"   Passed: {final_state.tests_passed} ✓")
         print(f"   Failed: {final_state.tests_failed} ✗")
-        print(f"   Success Rate: {(final_state.tests_passed/final_state.total_tests_run*100):.1f}%")
+        success_rate = (final_state.tests_passed / final_state.total_tests_run * 100) if final_state.total_tests_run > 0 else 0
+        print(f"   Success Rate: {success_rate:.1f}%")
 
     except Exception as e:
         print(f"\n❌ PIPELINE FAILED: {str(e)}")
@@ -300,7 +304,25 @@ def get_execution(webhook_id: str):
             "error": execution.get("error"),
         }
 
-    if execution["success"]:
+    if execution.get("type") == "pipeline" and execution.get("status") in {"pending", "processing"}:
+        return {
+            "webhook_id": webhook_id,
+            "timestamp": execution["timestamp"],
+            "status": execution.get("status", "pending"),
+            "summary": {
+                "total_tests": 0,
+                "passed": 0,
+                "failed": 0,
+                "success_rate": 0,
+            },
+            "endpoints": [],
+            "failures": [],
+            "report_markdown": None,
+            "success": execution.get("success", True),
+            "error": execution.get("error"),
+        }
+
+    if execution.get("success") and "state" in execution:
         state = VectorAgentState(**execution["state"])
         return {
             "webhook_id": webhook_id,

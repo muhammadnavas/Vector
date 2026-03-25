@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+    import { useEffect, useRef, useState } from 'react';
 import { discoverEndpoints, getExecution, triggerTestRun } from '../services/api';
 import './TestRunner.css';
 
@@ -97,6 +97,7 @@ export default function TestRunner() {
         webhook_id: webhookId,
         repo_name: repoName,
         repo_url: repoUrl,
+        base_api_url: baseApiUrl || null,
         commit_sha: commitSha,
         commit_message: commitMessage,
       });
