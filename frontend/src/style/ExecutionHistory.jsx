@@ -10,6 +10,7 @@ const token = {
   textDim: 'rgba(255,255,255,0.35)',
   border: 'rgba(124,58,237,0.18)',
   cardBg: 'rgba(255,255,255,0.03)',
+  cardBgHover: 'rgba(124,58,237,0.08)',
   success: '#10b981',
   danger: '#ef4444',
 };
@@ -84,7 +85,7 @@ export default function ExecutionHistory() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         {/* Executions List */}
         <div>
           <h2
@@ -250,7 +251,7 @@ export default function ExecutionHistory() {
                             fontWeight: 700,
                           }}
                         >
-                          {selectedExecution.summary.success_rate.toFixed(1)}%
+                          {Number(selectedExecution.summary.success_rate || 0).toFixed(1)}%
                         </div>
                       </div>
 

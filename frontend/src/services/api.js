@@ -3,7 +3,24 @@
  * Handles all communication with the LangGraph pipeline
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+async function parseError(response) {
+  const body = await response.json().catch(() => ({}));
+  return body.detail || body.message || `HTTP error! status: ${response.status}`;
+}
+
+function normalizeNetworkError(error) {
+  if (error instanceof TypeError && String(error.message || '').includes('Failed to fetch')) {
+    const offlineError = new Error(
+      `Backend API is not reachable at ${API_BASE_URL}. ` +
+      'Start backend with: python Agents/main.py or set VITE_API_BASE_URL in frontend/.env'
+    );
+    offlineError.status = 0;
+    return offlineError;
+  }
+  return error;
+}
 
 /**
  * Trigger a new test run
@@ -19,13 +36,16 @@ export async function triggerTestRun(payload) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(await parseError(response));
+      error.status = response.status;
+      throw error;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error triggering test run:', error);
-    throw error;
+    const normalizedError = normalizeNetworkError(error);
+    console.error('Error triggering test run:', normalizedError);
+    throw normalizedError;
   }
 }
 
@@ -43,23 +63,16 @@ export async function discoverEndpoints(payload) {
     });
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      const error = new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+      const error = new Error(await parseError(response));
       error.status = response.status;
       throw error;
     }
 
     return await response.json();
   } catch (error) {
-    if (error instanceof TypeError && String(error.message || '').includes('Failed to fetch')) {
-      const offlineError = new Error('Backend API is not reachable at http://localhost:8000. Start backend with: cd Agents && python main.py');
-      offlineError.status = 0;
-      console.error('Error triggering endpoint discovery:', offlineError);
-      throw offlineError;
-    }
-
-    console.error('Error triggering endpoint discovery:', error);
-    throw error;
+    const normalizedError = normalizeNetworkError(error);
+    console.error('Error triggering endpoint discovery:', normalizedError);
+    throw normalizedError;
   }
 }
 
@@ -71,13 +84,14 @@ export async function getExecutions() {
     const response = await fetch(`${API_BASE_URL}/pipeline/executions`);
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(await parseError(response));
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching executions:', error);
-    throw error;
+    const normalizedError = normalizeNetworkError(error);
+    console.error('Error fetching executions:', normalizedError);
+    throw normalizedError;
   }
 }
 
@@ -89,16 +103,16 @@ export async function getExecution(webhookId) {
     const response = await fetch(`${API_BASE_URL}/pipeline/executions/${webhookId}`);
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      const error = new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+      const error = new Error(await parseError(response));
       error.status = response.status;
       throw error;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching execution:', error);
-    throw error;
+    const normalizedError = normalizeNetworkError(error);
+    console.error('Error fetching execution:', normalizedError);
+    throw normalizedError;
   }
 }
 
