@@ -6,6 +6,7 @@ class TestStatus(str, Enum):
     PENDING = "pending"
     PASSED = "passed"
     FAILED = "failed"
+    SKIPPED = "skipped"
 
 class TestCase(BaseModel):
     """Individual test case"""
@@ -25,7 +26,7 @@ class TestResult(BaseModel):
     status: TestStatus
     actual_status: int
     expected_status: int
-    response_body: Optional[Dict[str, Any]] = None
+    response_body: Optional[Any] = None  # Can be dict OR list (e.g. GET /posts returns [])
     error_message: Optional[str] = None
     execution_time_ms: float
 
@@ -65,6 +66,7 @@ class VectorAgentState(BaseModel):
     total_tests_run: int = 0
     tests_passed: int = 0
     tests_failed: int = 0
+    tests_skipped: int = 0
 
     # Failure Analysis Phase
     failures: List[Dict[str, Any]] = []

@@ -13,7 +13,13 @@ from discovery.service import discover_endpoints_from_repo
 from graph_state import VectorAgentState, CodeChange, TestCase, TestResult, TestStatus
 
 
-TESTABLE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# All HTTP methods that can be generated as test cases.
+# GET/HEAD/OPTIONS are safe reads; POST/PUT/PATCH/DELETE are included with
+# an empty body so we at least verify reachability and auth behaviour.
+TESTABLE_METHODS = {"GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"}
+
+# Methods that send a request body (empty JSON object when no schema is known).
+MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def _contains_path_params(path: str) -> bool:
@@ -131,29 +137,52 @@ async def code_understanding_agent(state: VectorAgentState) -> dict:
 async def test_case_generator_agent(state: VectorAgentState) -> dict:
     """
     Generates adaptive test cases:
-    - Positive tests (happy path)
-    - Negative tests (invalid inputs)
-    - Edge cases
+    - Positive tests (happy path) for all HTTP methods
     - Auth failure tests
-    - Rate limit tests
+    - SKIPPED entries for path-param routes (surfaced, not silently dropped)
     """
     print(f"\n🧪 [TEST GENERATOR] Generating test cases for {len(state.analyzed_endpoints)} endpoints...")
 
     test_cases = []
+    skipped_results = []
     test_id = 1
 
     for endpoint in state.analyzed_endpoints:
         method = (endpoint.get("method") or "").upper()
         path = endpoint.get("path") or "/"
 
+        # Skip non-HTTP framework markers (e.g. Django "ANY", frontend "ROUTE")
         if method not in TESTABLE_METHODS:
             continue
+
+        # Path-param routes can't be tested without concrete IDs — record as SKIPPED
         if _contains_path_params(path):
+            skipped_results.append(
+                TestResult(
+                    test_id=f"skip_{test_id}",
+                    test_name=f"[SKIP] {method} {path} - Path params require concrete values",
+                    status=TestStatus.SKIPPED,
+                    actual_status=0,
+                    expected_status=0,
+                    response_body=None,
+                    error_message="Path parameter route skipped — no concrete value available",
+                    execution_time_ms=0.0,
+                )
+            )
+            test_id += 1
             continue
 
         headers = {"Accept": "application/json"}
+        if method in MUTATING_METHODS:
+            headers["Content-Type"] = "application/json"
         if endpoint.get("auth_required"):
             headers["Authorization"] = "Bearer <token>"
+
+        # POST typically returns 201 Created; everything else defaults to 200
+        expected = 201 if method == "POST" else 200
+
+        # For mutating methods, send an empty body as a best-effort probe
+        body = {} if method in MUTATING_METHODS else None
 
         test_cases.append(TestCase(
             id=f"test_{test_id}",
@@ -161,7 +190,8 @@ async def test_case_generator_agent(state: VectorAgentState) -> dict:
             method=method,
             endpoint=path,
             headers=headers,
-            expected_status=200,
+            body=body,
+            expected_status=expected,
             expected_response_keys=[]
         ))
         test_id += 1
@@ -173,17 +203,24 @@ async def test_case_generator_agent(state: VectorAgentState) -> dict:
                 method=method,
                 endpoint=path,
                 headers={"Accept": "application/json"},
+                body=body,
                 expected_status=401,
             ))
             test_id += 1
 
+    # Merge skipped entries into state so they appear in reports
     state.generated_tests = test_cases
-    state.test_count = len(test_cases)
+    state.test_count = len(test_cases) + len(skipped_results)
+    # Store skipped results immediately so executor can merge them
+    state.test_results = skipped_results
+    state.tests_skipped = len(skipped_results)
     state.status = "tests_generated"
 
-    print(f"   ✓ Generated {len(test_cases)} test cases")
-    print(f"      - {len([t for t in test_cases if 'LIVE' in t.name])} live reachability tests")
-    print(f"      - {len([t for t in test_cases if 'AUTH' in t.name])} auth tests")
+    live_count = len([t for t in test_cases if '[LIVE]' in t.name])
+    auth_count = len([t for t in test_cases if '[AUTH]' in t.name])
+    print(f"   ✓ Generated {len(test_cases)} executable test cases, {len(skipped_results)} skipped (path params)")
+    print(f"      - {live_count} live reachability tests ({len([t for t in test_cases if t.method in MUTATING_METHODS and '[LIVE]' in t.name])} mutating)")
+    print(f"      - {auth_count} auth tests")
 
     return state.dict()
 
@@ -193,14 +230,17 @@ async def test_case_generator_agent(state: VectorAgentState) -> dict:
 # ============================================================================
 async def test_executor_agent(state: VectorAgentState) -> dict:
     """
-    Executes tests using Pytest/Newman integration
-    Tracks pass/fail status and timing
+    Executes tests using Pytest/Newman integration.
+    Tracks pass/fail/skipped status and timing.
+    Skipped entries (path-param routes) are already in state.test_results from the generator.
     """
-    print(f"\n⚙️  [TEST EXECUTOR] Running {len(state.generated_tests)} tests...")
+    print(f"\n⚙️  [TEST EXECUTOR] Running {len(state.generated_tests)} tests ({state.tests_skipped} pre-skipped)...")
 
-    results = []
+    # Start with any pre-populated SKIPPED results from the generator
+    results = list(state.test_results)
     passed = 0
     failed = 0
+    skipped = state.tests_skipped
 
     if not state.base_api_url:
         print("   ⚠️  Base API URL not provided. Live execution cannot run.")
@@ -237,12 +277,14 @@ async def test_executor_agent(state: VectorAgentState) -> dict:
             actual_status = response.status_code
 
             if "[AUTH]" in test.name:
+                # Auth tests pass on 401 or 403
                 is_pass = actual_status in {401, 403}
             else:
+                # Any 2xx or 3xx is a pass — covers 200, 201, 204, 301, etc.
                 is_pass = 200 <= actual_status < 400
 
             try:
-                response_body = response.json()
+                response_body = response.json()  # accepts dict OR list
             except Exception:
                 response_body = None
 
@@ -279,10 +321,11 @@ async def test_executor_agent(state: VectorAgentState) -> dict:
     state.test_results = results
     state.tests_passed = passed
     state.tests_failed = failed
-    state.total_tests_run = len(results)
+    state.tests_skipped = skipped
+    state.total_tests_run = passed + failed  # excludes skipped from the run count
     state.status = "tests_executed"
 
-    print(f"   ✓ Tests completed: {passed} passed, {failed} failed")
+    print(f"   ✓ Tests completed: {passed} passed, {failed} failed, {skipped} skipped")
     if failed > 0:
         print(f"   ⚠️  {failed} test(s) need failure analysis")
 
@@ -386,6 +429,7 @@ async def report_generator_agent(state: VectorAgentState) -> dict:
 - **Total Tests**: {state.total_tests_run}
 - **Passed**: {state.tests_passed} ✓
 - **Failed**: {state.tests_failed} ✗
+- **Skipped**: {state.tests_skipped} ⊘ (path-parameter routes — no concrete ID available)
 - **Success Rate**: {success_rate:.1f}%
 
 ## Analyzed Endpoints
