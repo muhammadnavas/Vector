@@ -34,7 +34,7 @@ async def main():
 
     try:
         # Invoke the compiled graph
-        final_state_dict = vector_pipeline.invoke(initial_state.dict())
+        final_state_dict = await vector_pipeline.ainvoke(initial_state.dict())
 
         # Convert back to state object
         final_state = VectorAgentState(**final_state_dict)
@@ -48,7 +48,8 @@ async def main():
         print(f"   Total Tests: {final_state.total_tests_run}")
         print(f"   Passed: {final_state.tests_passed} ✓")
         print(f"   Failed: {final_state.tests_failed} ✗")
-        print(f"   Success Rate: {(final_state.tests_passed/final_state.total_tests_run*100):.1f}%")
+        success_rate = (final_state.tests_passed / final_state.total_tests_run * 100) if final_state.total_tests_run > 0 else 0
+        print(f"   Success Rate: {success_rate:.1f}%")
 
         print(f"\n🔗 Analyzed Endpoints:")
         for endpoint in final_state.analyzed_endpoints:
