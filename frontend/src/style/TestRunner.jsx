@@ -186,7 +186,7 @@ export default function TestRunner() {
             fontWeight: 700,
           }}
         >
-          🚀 Trigger Test Run
+          <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><Rocket size={24} /> Trigger Test Run</span>
         </h2>
 
         <form onSubmit={handleSubmit}>
@@ -359,7 +359,7 @@ export default function TestRunner() {
                 fontSize: '0.875rem',
               }}
             >
-              ❌ {error}
+              <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><XCircle size={18} /> {error}</span>
             </div>
           )}
 
@@ -395,7 +395,7 @@ export default function TestRunner() {
               }
             }}
           >
-            {loading ? '⏳ Running Tests...' : '▶️ Run Tests'}
+            {loading ? <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}><Loader2 className="animate-spin" size={18} /> Running Tests...</span> : <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}><Play size={18} /> Run Tests</span>}
           </button>
 
           <button
@@ -418,7 +418,7 @@ export default function TestRunner() {
               transition: 'all 0.3s',
             }}
           >
-            {loading ? '⏳ Discovering Endpoints...' : '🔎 Discover Endpoints from Repo URL'}
+            {loading ? <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}><Loader2 className="animate-spin" size={18} /> Discovering Endpoints...</span> : <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}><Search size={18} /> Discover Endpoints from Repo URL</span>}
           </button>
         </form>
       </div>
@@ -444,7 +444,7 @@ export default function TestRunner() {
               fontWeight: 700,
             }}
           >
-            📊 Execution Results
+            <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><BarChart2 size={24} /> Execution Results</span>
           </h2>
 
           {/* Status Card */}
@@ -500,10 +500,10 @@ export default function TestRunner() {
                     fontWeight: 600,
                   }}
                 >
-                  {currentExecution.status === 'pending' && '⏳ Pending'}
-                  {currentExecution.status === 'processing' && '⚙️ Processing'}
-                  {currentExecution.status === 'completed' && '✅ Completed'}
-                  {(currentExecution.status === 'failed' || currentExecution.success === false) && '❌ Failed'}
+                  {currentExecution.status === 'pending' && <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Hourglass size={18} /> Pending</span>}
+                  {currentExecution.status === 'processing' && <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><Cog className="animate-spin" size={18} /> Processing</span>}
+                  {currentExecution.status === 'completed' && <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><CheckCircle size={18} /> Completed</span>}
+                  {(currentExecution.status === 'failed' || currentExecution.success === false) && <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><XCircle size={18} /> Failed</span>}
                 </div>
               </div>
 
@@ -617,7 +617,7 @@ export default function TestRunner() {
               }}
             >
               <h3 style={{ color: 'white', marginBottom: '16px', fontSize: '1.1rem' }}>
-                🔗 Tested Endpoints
+                <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><Link2 size={20} /> Tested Endpoints</span>
               </h3>
 
               <div
@@ -773,7 +773,7 @@ export default function TestRunner() {
                       </div>
                     </div>
                     <div style={{ color: token.textMuted, fontSize: '0.875rem' }}>
-                      {endpoint.auth_required ? '🔐 Auth Required' : '🔓 Public'}
+                      {endpoint.auth_required ? <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}><Lock size={14} /> Auth Required</span> : <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}><Unlock size={14} /> Public</span>}
                     </div>
                   </div>
                 ))}
@@ -807,7 +807,7 @@ export default function TestRunner() {
               }}
             >
               <h3 style={{ color: token.danger, marginBottom: '16px', fontSize: '1.1rem' }}>
-                ⚠️ Failures & Fixes ({currentExecution.failures.length})
+                <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><AlertTriangle size={20} /> Failures & Fixes ({currentExecution.failures.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {currentExecution.failures.map((failure, i) => (
@@ -852,7 +852,7 @@ export default function TestRunner() {
                         marginBottom: '12px',
                       }}
                     >
-                      <strong>💡 Suggested Fix:</strong>
+                      <strong><span style={{display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Lightbulb size={16} /> Suggested Fix:</span></strong>
                       <div style={{ marginTop: '8px' }}>{failure.suggested_fix}</div>
                     </div>
                     <div
@@ -891,7 +891,7 @@ export default function TestRunner() {
               }}
             >
               <h3 style={{ color: 'white', marginBottom: '16px', fontSize: '1.1rem' }}>
-                📄 Full Report
+                <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><FileText size={20} /> Full Report</span>
               </h3>
               <pre
                 style={{

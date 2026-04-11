@@ -201,7 +201,7 @@ function HeroSection() {
 
       {/* CTAs */}
       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <GlowButton primary>🚀 Run Your First Test</GlowButton>
+        <GlowButton primary><span style={{display: 'inline-flex', alignItems: 'center', gap: '8px'}}><Rocket size={18} /> Run Your First Test</span></GlowButton>
         <GlowButton primary={false}>View Architecture →</GlowButton>
       </div>
 
@@ -226,12 +226,12 @@ function HeroSection() {
           ))}
         </div>
         <div style={{ color: token.textDim }}>{'# Vector AI Agent output'}</div>
-        <div><span style={{ color: '#a78bfa' }}>✓</span> <span style={{ color: '#6ee7b7' }}>Webhook received</span> <span style={{ color: token.textDim }}>— POST /webhook/github</span></div>
-        <div><span style={{ color: '#a78bfa' }}>✓</span> <span style={{ color: '#93c5fd' }}>Analyzing diff</span> <span style={{ color: token.textDim }}>— routes/users.py (+47 lines)</span></div>
-        <div><span style={{ color: '#a78bfa' }}>✓</span> <span style={{ color: '#fbbf24' }}>Generating tests</span> <span style={{ color: token.textDim }}>— POST /users → 8 cases</span></div>
-        <div><span style={{ color: '#a78bfa' }}>✓</span> <span style={{ color: '#6ee7b7' }}>Executing via Pytest</span> <span style={{ color: token.textDim }}>— 7 passed, 1 failed</span></div>
-        <div><span style={{ color: '#f87171' }}>✗</span> <span style={{ color: '#f87171' }}>FAIL</span> <span style={{ color: token.textDim }}>test_missing_email — 500 Internal Server Error</span></div>
-        <div style={{ marginTop: '8px' }}><span style={{ color: '#a78bfa' }}>💡 Fix:</span> <span style={{ color: '#e2e8f0' }}>"Null check missing for user.email in validation layer"</span></div>
+        <div><span style={{ color: '#a78bfa' }}><Check size={16} /></span> <span style={{ color: '#6ee7b7' }}>Webhook received</span> <span style={{ color: token.textDim }}>— POST /webhook/github</span></div>
+        <div><span style={{ color: '#a78bfa' }}><Check size={16} /></span> <span style={{ color: '#93c5fd' }}>Analyzing diff</span> <span style={{ color: token.textDim }}>— routes/users.py (+47 lines)</span></div>
+        <div><span style={{ color: '#a78bfa' }}><Check size={16} /></span> <span style={{ color: '#fbbf24' }}>Generating tests</span> <span style={{ color: token.textDim }}>— POST /users → 8 cases</span></div>
+        <div><span style={{ color: '#a78bfa' }}><Check size={16} /></span> <span style={{ color: '#6ee7b7' }}>Executing via Pytest</span> <span style={{ color: token.textDim }}>— 7 passed, 1 failed</span></div>
+        <div><span style={{ color: '#f87171' }}><X size={16} /></span> <span style={{ color: '#f87171' }}>FAIL</span> <span style={{ color: token.textDim }}>test_missing_email — 500 Internal Server Error</span></div>
+        <div style={{ marginTop: '8px' }}><span style={{ color: '#a78bfa', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Lightbulb size={16} /> Fix:</span> <span style={{ color: '#e2e8f0' }}>"Null check missing for user.email in validation layer"</span></div>
       </div>
     </section>
   );
