@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { discoverEndpoints, getExecution, triggerTestRun, getStreamUrl } from '../services/api';
-import { Satellite, Brain, Beaker, Cog, Search, BarChart, CheckCircle } from 'lucide-react';
+import { Satellite, Brain, Beaker, Cog, Search, BarChart, CheckCircle, Rocket, XCircle, Loader2, Play, BarChart2, Hourglass, Link2, Lock, Unlock, AlertTriangle, Lightbulb, FileText } from 'lucide-react';
 import './TestRunner.css';
 
 const token = {
@@ -807,7 +807,7 @@ export default function TestRunner() {
               }}
             >
               <h3 style={{ color: token.danger, marginBottom: '16px', fontSize: '1.1rem' }}>
-                <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><AlertTriangle size={20} /> Failures & Fixes ({currentExecution.failures.length})
+                <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><AlertTriangle size={20} /> Failures & Fixes ({currentExecution.failures.length})</span>
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {currentExecution.failures.map((failure, i) => (

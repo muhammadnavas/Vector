@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-
+import { Rocket, Check, X, Lightbulb } from 'lucide-react';
 /* ─────────────────────────────────────────────
    Utility: animated counter hook
 ───────────────────────────────────────────── */
