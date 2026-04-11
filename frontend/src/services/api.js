@@ -127,3 +127,10 @@ export async function healthCheck() {
     return false;
   }
 }
+
+/**
+ * Get SSE Stream URL
+ */
+export function getStreamUrl(webhookId) {
+  return `${API_BASE_URL}/pipeline/stream/${webhookId}`;
+}

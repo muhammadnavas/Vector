@@ -1,5 +1,6 @@
-    import { useEffect, useRef, useState } from 'react';
-import { discoverEndpoints, getExecution, triggerTestRun } from '../services/api';
+import { useEffect, useRef, useState } from 'react';
+import { discoverEndpoints, getExecution, triggerTestRun, getStreamUrl } from '../services/api';
+import { Satellite, Brain, Beaker, Cog, Search, BarChart, CheckCircle } from 'lucide-react';
 import './TestRunner.css';
 
 const token = {
@@ -27,55 +28,60 @@ export default function TestRunner() {
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [frameworkFilter, setFrameworkFilter] = useState('ALL');
   const [authFilter, setAuthFilter] = useState('ALL');
-  const pollIntervalRef = useRef(null);
+  
+  const [liveSteps, setLiveSteps] = useState([]);
+  const sseRef = useRef(null);
 
-  const clearPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+  const clearSSE = () => {
+    if (sseRef.current) {
+      sseRef.current.close();
+      sseRef.current = null;
     }
   };
 
-  const pollExecution = (webhookId) => {
-    clearPolling();
-    let retries = 0;
-    pollIntervalRef.current = setInterval(async () => {
+  const startSSE = (webhookId) => {
+    clearSSE();
+    setLiveSteps([]);
+    const source = new EventSource(getStreamUrl(webhookId));
+    sseRef.current = source;
+    
+    source.onmessage = async (event) => {
       try {
-        const execution = await getExecution(webhookId);
-        if (
-          execution.status === 'completed' ||
-          execution.status === 'failed' ||
-          execution.success === false
-        ) {
-          clearPolling();
-          setCurrentExecution(execution);
-          setLoading(false);
+        const data = JSON.parse(event.data);
+        switch (data.type) {
+          case 'connected': break;
+          case 'agent_completed':
+            setLiveSteps(prev => [...prev, data]);
+            break;
+          case 'completed':
+          case 'failed':
+            clearSSE();
+            const execution = await getExecution(webhookId);
+            setCurrentExecution(execution);
+            setLoading(false);
+            break;
+          default: break;
         }
       } catch (err) {
-        const status = err?.status;
-        const message = String(err?.message || '').toLowerCase();
-
-        if (status === 404 || message.includes('execution not found')) {
-          clearPolling();
-          setError('Execution not found. It may have expired or backend was restarted. Please run discovery again.');
-          setLoading(false);
-          return;
-        }
-
-        retries += 1;
-        if (retries > 30) {
-          clearPolling();
-          setError('Execution timeout - check backend logs');
-          setLoading(false);
-        }
+        console.error("SSE parse error", err);
       }
-    }, 1000);
+    };
+    
+    source.onerror = () => {
+      console.error("SSE connection error for ID:", webhookId);
+      clearSSE();
+      getExecution(webhookId).then(execution => {
+        setCurrentExecution(execution);
+        setLoading(false);
+      }).catch(() => {
+        setError("Execution stream interrupted.");
+        setLoading(false);
+      });
+    };
   };
 
   useEffect(() => {
-    return () => {
-      clearPolling();
-    };
+    return () => clearSSE();
   }, []);
 
   // Generate random commit SHA and message
@@ -86,9 +92,10 @@ export default function TestRunner() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    clearPolling();
+    clearSSE();
     setLoading(true);
     setError(null);
+    setCurrentExecution(null);
 
     try {
       const webhookId = `test-${Date.now()}`;
@@ -101,9 +108,8 @@ export default function TestRunner() {
         commit_sha: commitSha,
         commit_message: commitMessage,
       });
-      pollExecution(webhookId);
+      startSSE(webhookId);
 
-      // Set execution with pending status immediately
       setCurrentExecution({
         webhook_id: webhookId,
         status: 'pending',
@@ -117,9 +123,10 @@ export default function TestRunner() {
   };
 
   const handleDiscover = async () => {
-    clearPolling();
+    clearSSE();
     setLoading(true);
     setError(null);
+    setCurrentExecution(null);
 
     try {
       const response = await discoverEndpoints({
@@ -136,7 +143,7 @@ export default function TestRunner() {
         commit: '-',
       });
 
-      pollExecution(response.webhook_id);
+      startSSE(response.webhook_id);
     } catch (err) {
       setError(err.message || 'Failed to discover endpoints');
       setLoading(false);
@@ -415,6 +422,11 @@ export default function TestRunner() {
           </button>
         </form>
       </div>
+
+      {/* Live Pipeline Visualizer */}
+      {(loading || liveSteps.length > 0) && (
+        <PipelineVisualizer liveSteps={liveSteps} />
+      )}
 
       {/* Results Section */}
       {currentExecution && (
@@ -902,3 +914,59 @@ export default function TestRunner() {
     </div>
   );
 }
+
+// Visualizer Component
+const PipelineVisualizer = ({ liveSteps }) => {
+  const steps = [
+    { id: 'github_agent', label: 'GitHub Recon', icon: <Satellite size={32} strokeWidth={1.5} /> },
+    { id: 'code_agent', label: 'Code Analysis', icon: <Brain size={32} strokeWidth={1.5} /> },
+    { id: 'test_generator', label: 'Test Gen', icon: <Beaker size={32} strokeWidth={1.5} /> },
+    { id: 'test_executor', label: 'Execution', icon: <Cog size={32} strokeWidth={1.5} /> },
+    { id: 'analyze_failures', label: 'Analysis', icon: <Search size={32} strokeWidth={1.5} /> },
+    { id: 'generate_report', label: 'Reporting', icon: <BarChart size={32} strokeWidth={1.5} /> },
+  ];
+  
+  const completedIds = new Set(liveSteps.map(s => s.agent));
+  
+  return (
+    <div style={{
+      maxWidth: '900px', margin: '0 auto 24px',
+      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(124,58,237,0.18)', 
+      borderRadius: '16px', padding: '24px', backdropFilter: 'blur(12px)'
+    }}>
+       <h3 style={{ color: 'white', marginBottom: '20px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ 
+            display: 'inline-block', width: '10px', height: '10px', background: '#10b981', 
+            borderRadius: '50%', boxShadow: '0 0 10px #10b981', animation: 'pulse 1.5s infinite' 
+          }}></span>
+          Live Stream: Pipeline Execution
+       </h3>
+       
+       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+         {steps.map((step, index) => {
+           const isDone = completedIds.has(step.id);
+           const isCurrent = !isDone && liveSteps.length === index;
+           const isPending = !isDone && !isCurrent;
+           
+           return (
+             <div key={step.id} style={{
+               padding: '16px', borderRadius: '12px',
+               border: `1px solid ${isDone ? '#10b981' : isCurrent ? '#7c3aed' : 'rgba(255,255,255,0.1)'}`,
+               background: isDone ? 'rgba(16, 185, 129, 0.1)' : isCurrent ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255,255,255,0.02)',
+               textAlign: 'center', transition: 'all 0.3s ease',
+               opacity: isPending ? 0.4 : 1,
+               boxShadow: isCurrent ? '0 0 16px rgba(124,58,237,0.4)' : 'none',
+               transform: isCurrent ? 'translateY(-2px)' : 'none'
+             }}>
+               <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>{step.icon}</div>
+               <div style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600 }}>{step.label}</div>
+               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                 {isDone ? <>Finished <CheckCircle size={14} /></> : isCurrent ? 'Executing...' : 'Pending'}
+               </div>
+             </div>
+           );
+         })}
+       </div>
+    </div>
+  );
+};

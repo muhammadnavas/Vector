@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from typing import Optional
 import asyncio
@@ -44,6 +46,7 @@ def _save_execution_history() -> None:
 
 # In-memory storage backed by disk to survive development reloads.
 execution_history = _load_execution_history()
+execution_event_queues = {}
 
 
 class WebhookPayload(BaseModel):
@@ -126,16 +129,23 @@ async def execute_pipeline(initial_state: VectorAgentState):
         # Convert to dict for LangGraph
         state_dict = initial_state.dict()
 
-        # Execute the compiled graph via async API because nodes are async.
-        print("\n[PIPELINE] Invoking LangGraph workflow...")
-        final_state_result = await vector_pipeline.ainvoke(state_dict)
+        print("\n[PIPELINE] Invoking LangGraph workflow with streaming...")
+        final_state_dict = state_dict.copy()
 
-        # LangGraph can return either dict or typed state depending on runtime path.
-        final_state = (
-            final_state_result
-            if isinstance(final_state_result, VectorAgentState)
-            else VectorAgentState(**final_state_result)
-        )
+        async for event in vector_pipeline.astream(state_dict, {"recursion_limit": 50}):
+            node_name = list(event.keys())[0]
+            state_update = event[node_name]
+            final_state_dict.update(state_update)
+
+            if initial_state.webhook_id in execution_event_queues:
+                for q in execution_event_queues[initial_state.webhook_id]:
+                    q.put_nowait({
+                        "type": "agent_completed",
+                        "agent": node_name,
+                        "state": state_update
+                    })
+
+        final_state = VectorAgentState(**final_state_dict)
 
         # Store in history
         execution_history[initial_state.webhook_id] = {
@@ -148,6 +158,10 @@ async def execute_pipeline(initial_state: VectorAgentState):
             "success": True
         }
         _save_execution_history()
+
+        if initial_state.webhook_id in execution_event_queues:
+            for q in execution_event_queues[initial_state.webhook_id]:
+                q.put_nowait({"type": "completed", "final_state": jsonable_encoder(final_state.dict())})
 
         print(f"\n{'='*70}")
         print(f"✅ PIPELINE COMPLETED: {initial_state.webhook_id}")
@@ -171,6 +185,10 @@ async def execute_pipeline(initial_state: VectorAgentState):
             "success": False
         }
         _save_execution_history()
+
+        if initial_state.webhook_id in execution_event_queues:
+            for q in execution_event_queues[initial_state.webhook_id]:
+                q.put_nowait({"type": "failed", "error": str(e)})
 
 
 @router.post("/discover-endpoints")
@@ -239,6 +257,11 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str, base
             "discovery": discovery_result,
         }
         _save_execution_history()
+
+        if webhook_id in execution_event_queues:
+            for q in execution_event_queues[webhook_id]:
+                q.put_nowait({"type": "completed", "final_state": jsonable_encoder({"discovery": discovery_result})})
+
     except Exception as e:
         execution_history[webhook_id] = {
             "type": "discovery",
@@ -251,6 +274,10 @@ async def execute_discovery(webhook_id: str, repo_url: str, repo_name: str, base
             "error": str(e),
         }
         _save_execution_history()
+
+        if webhook_id in execution_event_queues:
+            for q in execution_event_queues[webhook_id]:
+                q.put_nowait({"type": "failed", "error": str(e)})
 
 
 @router.get("/executions")
@@ -353,3 +380,40 @@ async def manual_test_run(payload: WebhookPayload, background_tasks: BackgroundT
     Manually trigger a test run (for testing without actual GitHub webhook)
     """
     return await receive_github_webhook(payload, background_tasks)
+
+@router.get("/stream/{webhook_id}")
+async def stream_execution(webhook_id: str):
+    """Real-time SSE stream for pipeline execution updates."""
+    async def event_generator():
+        queue = asyncio.Queue()
+        if webhook_id not in execution_event_queues:
+            execution_event_queues[webhook_id] = []
+        execution_event_queues[webhook_id].append(queue)
+        
+        try:
+            yield f"data: {json.dumps({'type': 'connected', 'webhook_id': webhook_id})}\n\n"
+            
+            # Catch up if already completed
+            execution = execution_history.get(webhook_id)
+            if execution and execution.get("status") in ("completed", "failed"):
+                if execution.get("status") == "completed":
+                    yield f"data: {json.dumps(jsonable_encoder({'type': 'completed', 'final_state': execution.get('state') or execution.get('discovery')}))}\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'failed', 'error': execution.get('error')})}\n\n"
+                return
+
+            while True:
+                msg = await queue.get()
+                yield f"data: {json.dumps(jsonable_encoder(msg))}\n\n"
+                if msg["type"] in ("completed", "failed"):
+                    break
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if webhook_id in execution_event_queues:
+                if queue in execution_event_queues[webhook_id]:
+                    execution_event_queues[webhook_id].remove(queue)
+                if not execution_event_queues[webhook_id]:
+                    del execution_event_queues[webhook_id]
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

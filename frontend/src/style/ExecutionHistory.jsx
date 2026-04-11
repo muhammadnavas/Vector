@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getExecution, getExecutions } from '../services/api';
+import { ClipboardList, XCircle } from 'lucide-react';
 import './ExecutionHistory.css';
 
 const token = {
@@ -61,7 +62,7 @@ export default function ExecutionHistory() {
           fontWeight: 800,
         }}
       >
-        📋 Execution History
+        <span style={{display: 'flex', alignItems: 'center', gap: '12px'}}><ClipboardList size={32} /> Execution History</span>
       </h1>
 
       {loading && (
@@ -81,7 +82,7 @@ export default function ExecutionHistory() {
             marginBottom: '24px',
           }}
         >
-          ❌ {error}
+          <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><XCircle size={18} /> {error}</span>
         </div>
       )}
 
@@ -199,7 +200,7 @@ export default function ExecutionHistory() {
                     color: '#fca5a5',
                   }}
                 >
-                  ❌ Error: {selectedExecution.error}
+                  <span style={{display: 'flex', alignItems: 'center', gap: '8px'}}><XCircle size={18} /> Error: {selectedExecution.error}</span>
                 </div>
               ) : (
                 <>
